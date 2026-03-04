@@ -16,6 +16,7 @@ export default {
       },
       fontFamily: {
         sans: ['var(--font-sans)'],
+        serif: ['var(--font-display)'],
         display: ['var(--font-display)'],
       },
       boxShadow: {
