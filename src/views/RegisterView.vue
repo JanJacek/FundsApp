@@ -10,16 +10,19 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMsg = ref('')
+const successMsg = ref('')
 
 const onSubmit = async () => {
   errorMsg.value = ''
+  successMsg.value = ''
   loading.value = true
 
   try {
-    await auth.signIn(email.value, password.value)
-    await router.push('/')
+    await auth.signUp(email.value, password.value)
+    successMsg.value = 'Konto utworzone. Możesz się zalogować.'
+    await router.push('/login')
   } catch (error) {
-    errorMsg.value = error instanceof Error ? error.message : 'Nie udało się zalogować.'
+    errorMsg.value = error instanceof Error ? error.message : 'Nie udało się zarejestrować.'
   } finally {
     loading.value = false
   }
@@ -29,7 +32,7 @@ const onSubmit = async () => {
 <template>
   <main class="auth-page">
     <form class="auth-card" @submit.prevent="onSubmit">
-      <h1>Logowanie</h1>
+      <h1>Rejestracja</h1>
 
       <label>
         Email
@@ -38,16 +41,17 @@ const onSubmit = async () => {
 
       <label>
         Hasło
-        <input v-model="password" type="password" autocomplete="current-password" required />
+        <input v-model="password" type="password" autocomplete="new-password" minlength="6" required />
       </label>
 
       <p v-if="errorMsg" class="error">{{ errorMsg }}</p>
+      <p v-if="successMsg" class="success">{{ successMsg }}</p>
 
       <button :disabled="loading" type="submit">
-        {{ loading ? 'Logowanie...' : 'Zaloguj' }}
+        {{ loading ? 'Tworzenie konta...' : 'Utwórz konto' }}
       </button>
 
-      <router-link to="/register">Nie masz konta? Zarejestruj się</router-link>
+      <router-link to="/login">Masz już konto? Zaloguj się</router-link>
     </form>
   </main>
 </template>
@@ -107,5 +111,10 @@ button:disabled {
 .error {
   margin: 0;
   color: #b42318;
+}
+
+.success {
+  margin: 0;
+  color: #067647;
 }
 </style>

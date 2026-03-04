@@ -22,9 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     initPromise = (async () => {
       const { data, error } = await supabase.auth.getSession()
-      if (error) {
-        console.error('Failed to load session', error)
-      }
+      if (error) console.error('Failed to load session', error)
       applySession(data?.session ?? null)
 
       if (!subscription) {
@@ -46,6 +44,11 @@ export const useAuthStore = defineStore('auth', () => {
     if (error) throw error
   }
 
+  const signUp = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({ email, password })
+    if (error) throw error
+  }
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
@@ -57,6 +60,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     initialize,
     signIn,
+    signUp,
     signOut,
   }
 })
