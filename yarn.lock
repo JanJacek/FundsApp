@@ -1265,11 +1265,6 @@
   resolved "https://registry.yarnpkg.com/@vue/tsconfig/-/tsconfig-0.8.1.tgz#4732251fa58945024424385cf3be0b1708fad5fe"
   integrity sha512-aK7feIWPXFSUhsCP9PFqPyFOcz4ENkb8hZ2pneL6m2UjCkccvaOhC/5KCKluuBufvp2KzkbdA2W2pk20vLzu3g==
 
-"@yr/monotone-cubic-spline@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@yr/monotone-cubic-spline/-/monotone-cubic-spline-1.0.3.tgz#7272d89f8e4f6fb7a1600c28c378cc18d3b577b9"
-  integrity sha512-FQXkOta0XBSUPHndIKON2Y9JeQz5ZeMqLYZVVK93FliNBFm7LNMIZmY6FrMEB9XPcDbE2bekMbZD6kzDkxwYjA==
-
 acorn-jsx@^5.3.2:
   version "5.3.2"
   resolved "https://registry.yarnpkg.com/acorn-jsx/-/acorn-jsx-5.3.2.tgz#7ed5bb55908b3b2f1bc55c6af1653bada7f07937"
@@ -1317,13 +1312,6 @@ anymatch@~3.1.2:
   dependencies:
     normalize-path "^3.0.0"
     picomatch "^2.0.4"
-
-apexcharts@^5.10.1:
-  version "5.10.1"
-  resolved "https://registry.yarnpkg.com/apexcharts/-/apexcharts-5.10.1.tgz#e4f89e6d866689cf213ed9a783304fba2a50acbf"
-  integrity sha512-BpKKRopNm5cziXmA1igmCKiJ02I2g/I4vBtjhB6/50FrrY2IH5csvCzzqiIuFCB+P+2p0MgLAGOJPKOUvXO63w==
-  dependencies:
-    "@yr/monotone-cubic-spline" "^1.0.3"
 
 arg@^5.0.2:
   version "5.0.2"
@@ -2868,11 +2856,6 @@ vue-tsc@^3.2.5:
   dependencies:
     "@volar/typescript" "2.4.28"
     "@vue/language-core" "3.2.5"
-
-vue3-apexcharts@^1.11.1:
-  version "1.11.1"
-  resolved "https://registry.yarnpkg.com/vue3-apexcharts/-/vue3-apexcharts-1.11.1.tgz#5a9f8a319ae196e0490bc5413ab68bb400685c55"
-  integrity sha512-MbN3vg8bMG19wc0Lm1HkeQvODgLm56DgpIxtNUO0xpf/JCzYWVGE4jzXp2JISzy2s3Kul1yOxNQUYsLvKQ5L9g==
 
 vue@^3.5.29:
   version "3.5.29"

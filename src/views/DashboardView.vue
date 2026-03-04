@@ -1,22 +1,24 @@
 <template>
   <main class="min-h-[calc(100vh-4rem)] bg-dashboard p-6">
     <div class="w-full">
-      <p v-if="loading" class="mx-auto mb-4 max-w-[760px] text-sm text-muted">
+      <p v-if="loading" class="mx-auto mb-4 max-w-[980px] text-sm text-muted">
         Ładowanie danych portfela...
       </p>
-      <p v-else-if="errorMsg" class="mx-auto mb-4 max-w-[760px] text-sm text-error">
+      <p v-else-if="errorMsg" class="mx-auto mb-4 max-w-[980px] text-sm text-error">
         {{ errorMsg }}
       </p>
 
-      <FWalet
-        v-else
-        :cash-pln="cashInDisplayCurrency"
-        :stocks-pln="stocksInDisplayCurrency"
-        :etfs-pln="etfsInDisplayCurrency"
-        :bonds-pln="bondsInDisplayCurrency"
-        :currency="settings.displayCurrency"
-        :missing-currencies="missingCurrencies"
-      />
+      <template v-else>
+        <FWalet
+          :cash-pln="cashInDisplayCurrency"
+          :stocks-pln="stocksInDisplayCurrency"
+          :etfs-pln="etfsInDisplayCurrency"
+          :bonds-pln="bondsInDisplayCurrency"
+          :currency="settings.displayCurrency"
+          :target="settings.portfolioAllocation"
+          :missing-currencies="missingCurrencies"
+        />
+      </template>
     </div>
   </main>
 </template>
@@ -103,7 +105,15 @@ const loadWalletData = async () => {
 }
 
 onMounted(() => {
-  void loadWalletData()
+  void (async () => {
+    await loadWalletData()
+
+    try {
+      await settings.loadPortfolioAllocation()
+    } catch (error) {
+      console.error('Nie udało się pobrać ustawień portfela', error)
+    }
+  })()
 })
 </script>
 
