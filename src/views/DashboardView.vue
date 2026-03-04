@@ -24,6 +24,7 @@
 
       <FCashPanel v-else-if="activeTab === 'cash'" />
       <FStocksPanel v-else-if="activeTab === 'stocks'" />
+      <FEtfsPanel v-else-if="activeTab === 'etfs'" />
       <FBondsPanel v-else-if="activeTab === 'bonds'" />
     </div>
   </main>
@@ -34,6 +35,7 @@ import FDashboardNav from '@/components/FDashboardNav.vue'
 import type { DashboardTab } from '@/components/FDashboardNav.vue'
 import FBondsPanel from '@/components/FBondsPanel.vue'
 import FCashPanel from '@/components/FCashPanel.vue'
+import FEtfsPanel from '@/components/FEtfsPanel.vue'
 import FStocksPanel from '@/components/FStocksPanel.vue'
 import FWalet from '@/components/FWalet.vue'
 import { supabase } from '@/lib/supabase'
@@ -128,8 +130,22 @@ const loadWalletData = async () => {
       if (isClosed) continue
       stocksTotal += Number(row.current_price)
     }
-
     stocksPln.value = Number(stocksTotal.toFixed(2))
+
+    const { data: etfsData, error: etfsError } = await supabase
+      .from('etfs_positions')
+      .select('current_price, closed_at')
+      .order('opened_at', { ascending: false })
+
+    if (etfsError) throw etfsError
+
+    let etfsTotal = 0
+    for (const row of (etfsData ?? []) as { current_price: number | string; closed_at: string | null }[]) {
+      const isClosed = !!row.closed_at && row.closed_at < today
+      if (isClosed) continue
+      etfsTotal += Number(row.current_price)
+    }
+    etfsPln.value = Number(etfsTotal.toFixed(2))
 
     const monthEnd = `${currentPeriodMonth.slice(0, 7)}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
     const { data: bondsData, error: bondsError } = await supabase
@@ -154,8 +170,8 @@ const loadWalletData = async () => {
 
       bondsTotal += Number(row.current_value) * rate
     }
-
     bondsPln.value = Number(bondsTotal.toFixed(2))
+
     missingCurrencies.value = Array.from(missing).sort()
   } catch (error) {
     errorMsg.value = error instanceof Error ? error.message : 'Nie udało się pobrać danych walet.'
@@ -187,6 +203,10 @@ watch(
       activeTab.value = 'stocks'
       return
     }
+    if (tab === 'etfs') {
+      activeTab.value = 'etfs'
+      return
+    }
     if (tab === 'bonds') {
       activeTab.value = 'bonds'
       return
@@ -204,6 +224,8 @@ watch(activeTab, async (tab) => {
     query.tab = 'cash'
   } else if (tab === 'stocks') {
     query.tab = 'stocks'
+  } else if (tab === 'etfs') {
+    query.tab = 'etfs'
   } else if (tab === 'bonds') {
     query.tab = 'bonds'
   } else {

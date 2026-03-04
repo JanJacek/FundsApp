@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-export type DashboardTab = 'wallet' | 'cash' | 'stocks' | 'bonds'
+export type DashboardTab = 'wallet' | 'cash' | 'stocks' | 'etfs' | 'bonds'
 
 defineProps<{
   modelValue: DashboardTab
@@ -33,6 +33,7 @@ const items: { label: string; value: DashboardTab }[] = [
   { label: 'Walet', value: 'wallet' },
   { label: 'Cash', value: 'cash' },
   { label: 'Stocks', value: 'stocks' },
+  { label: 'ETFs', value: 'etfs' },
   { label: 'Bonds', value: 'bonds' },
 ]
 </script>
