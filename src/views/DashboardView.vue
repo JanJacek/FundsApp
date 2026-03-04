@@ -27,6 +27,7 @@
       <FEtfsPanel v-else-if="activeTab === 'etfs'" />
       <FBondsPanel v-else-if="activeTab === 'bonds'" />
       <FProgressPanel v-else-if="activeTab === 'progress'" />
+      <FRoiPanel v-else-if="activeTab === 'roi'" />
     </div>
   </main>
 </template>
@@ -38,6 +39,7 @@ import FBondsPanel from '@/components/FBondsPanel.vue'
 import FCashPanel from '@/components/FCashPanel.vue'
 import FEtfsPanel from '@/components/FEtfsPanel.vue'
 import FProgressPanel from '@/components/FProgressPanel.vue'
+import FRoiPanel from '@/components/FRoiPanel.vue'
 import FStocksPanel from '@/components/FStocksPanel.vue'
 import FWalet from '@/components/FWalet.vue'
 import { supabase } from '@/lib/supabase'
@@ -217,6 +219,10 @@ watch(
       activeTab.value = 'progress'
       return
     }
+    if (tab === 'roi') {
+      activeTab.value = 'roi'
+      return
+    }
 
     activeTab.value = 'wallet'
   },
@@ -236,6 +242,8 @@ watch(activeTab, async (tab) => {
     query.tab = 'bonds'
   } else if (tab === 'progress') {
     query.tab = 'progress'
+  } else if (tab === 'roi') {
+    query.tab = 'roi'
   } else {
     delete query.tab
   }
