@@ -24,6 +24,7 @@
 
       <FCashPanel v-else-if="activeTab === 'cash'" />
       <FStocksPanel v-else-if="activeTab === 'stocks'" />
+      <FBondsPanel v-else-if="activeTab === 'bonds'" />
     </div>
   </main>
 </template>
@@ -31,6 +32,7 @@
 <script setup lang="ts">
 import FDashboardNav from '@/components/FDashboardNav.vue'
 import type { DashboardTab } from '@/components/FDashboardNav.vue'
+import FBondsPanel from '@/components/FBondsPanel.vue'
 import FCashPanel from '@/components/FCashPanel.vue'
 import FStocksPanel from '@/components/FStocksPanel.vue'
 import FWalet from '@/components/FWalet.vue'
@@ -128,6 +130,32 @@ const loadWalletData = async () => {
     }
 
     stocksPln.value = Number(stocksTotal.toFixed(2))
+
+    const monthEnd = `${currentPeriodMonth.slice(0, 7)}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+    const { data: bondsData, error: bondsError } = await supabase
+      .from('bonds_positions')
+      .select('currency, current_value, purchase_date, maturity_date')
+      .lte('purchase_date', monthEnd)
+      .gte('maturity_date', currentPeriodMonth)
+
+    if (bondsError) throw bondsError
+
+    let bondsTotal = 0
+    for (const row of (
+      bondsData ?? []
+    ) as { currency: string; current_value: number | string; purchase_date: string; maturity_date: string }[]) {
+      const currency = row.currency?.toUpperCase()
+      if (!currency) continue
+      const rate = FX_TO_PLN[currency]
+      if (!rate) {
+        missing.add(currency)
+        continue
+      }
+
+      bondsTotal += Number(row.current_value) * rate
+    }
+
+    bondsPln.value = Number(bondsTotal.toFixed(2))
     missingCurrencies.value = Array.from(missing).sort()
   } catch (error) {
     errorMsg.value = error instanceof Error ? error.message : 'Nie udało się pobrać danych walet.'
@@ -159,6 +187,10 @@ watch(
       activeTab.value = 'stocks'
       return
     }
+    if (tab === 'bonds') {
+      activeTab.value = 'bonds'
+      return
+    }
 
     activeTab.value = 'wallet'
   },
@@ -172,6 +204,8 @@ watch(activeTab, async (tab) => {
     query.tab = 'cash'
   } else if (tab === 'stocks') {
     query.tab = 'stocks'
+  } else if (tab === 'bonds') {
+    query.tab = 'bonds'
   } else {
     delete query.tab
   }
