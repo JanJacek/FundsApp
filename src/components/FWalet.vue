@@ -1,5 +1,5 @@
 <template>
-  <section class="mx-auto w-full max-w-[980px]">
+  <section class="mx-auto w-full max-w-[69rem]">
     <div class="rounded-[12px] border border-border bg-surface p-4">
       <div class="flex flex-wrap items-end justify-between gap-2">
         <h2 class="m-0 text-xl font-bold text-text">Portfel</h2>

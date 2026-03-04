@@ -1,5 +1,5 @@
 <template>
-  <nav class="mx-auto mb-4 w-full max-w-[980px]">
+  <nav class="mx-auto mb-4 w-full max-w-[69rem]">
     <ul class="flex flex-wrap gap-2">
       <li
         v-for="item in items"
@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-export type DashboardTab = 'wallet' | 'cash'
+export type DashboardTab = 'wallet' | 'cash' | 'stocks'
 
 defineProps<{
   modelValue: DashboardTab
@@ -32,6 +32,7 @@ const emit = defineEmits<{
 const items: { label: string; value: DashboardTab }[] = [
   { label: 'Walet', value: 'wallet' },
   { label: 'Cash', value: 'cash' },
+  { label: 'Stocks', value: 'stocks' },
 ]
 </script>
 

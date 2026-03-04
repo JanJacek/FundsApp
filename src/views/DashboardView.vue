@@ -1,12 +1,12 @@
 <template>
-  <main class="min-h-[calc(100vh-4rem)] bg-dashboard p-6">
+  <main class="min-h-[calc(100vh-4rem)] bg-dashboard px-6 py-4">
     <div class="w-full">
       <FDashboardNav v-model="activeTab" />
 
-      <p v-if="loading && activeTab === 'wallet'" class="mx-auto mb-4 max-w-[980px] text-sm text-muted">
+      <p v-if="loading && activeTab === 'wallet'" class="mx-auto mb-4 max-w-[69rem] text-sm text-muted">
         Ładowanie danych portfela...
       </p>
-      <p v-else-if="errorMsg && activeTab === 'wallet'" class="mx-auto mb-4 max-w-[980px] text-sm text-error">
+      <p v-else-if="errorMsg && activeTab === 'wallet'" class="mx-auto mb-4 max-w-[69rem] text-sm text-error">
         {{ errorMsg }}
       </p>
 
@@ -23,6 +23,7 @@
       </template>
 
       <FCashPanel v-else-if="activeTab === 'cash'" />
+      <FStocksPanel v-else-if="activeTab === 'stocks'" />
     </div>
   </main>
 </template>
@@ -31,6 +32,7 @@
 import FDashboardNav from '@/components/FDashboardNav.vue'
 import type { DashboardTab } from '@/components/FDashboardNav.vue'
 import FCashPanel from '@/components/FCashPanel.vue'
+import FStocksPanel from '@/components/FStocksPanel.vue'
 import FWalet from '@/components/FWalet.vue'
 import { supabase } from '@/lib/supabase'
 import { useSettingsStore } from '@/stores/settings'
@@ -40,7 +42,6 @@ import { useRoute, useRouter } from 'vue-router'
 type CashBalanceRow = {
   currency: string
   amount: number | string
-  period_month: string
 }
 
 const FX_TO_PLN: Record<string, number> = {
@@ -76,37 +77,57 @@ const bondsInDisplayCurrency = computed(() => convertFromPln(bondsPln.value))
 const loadWalletData = async () => {
   loading.value = true
   errorMsg.value = ''
+  cashPln.value = 0
+  stocksPln.value = 0
+  etfsPln.value = 0
+  bondsPln.value = 0
+  missingCurrencies.value = []
 
   try {
+    const now = new Date()
+    const currentPeriodMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+
     const { data, error } = await supabase
       .from('cash_balances')
-      .select('currency, amount, period_month')
-      .order('period_month', { ascending: false })
+      .select('currency, amount')
+      .eq('period_month', currentPeriodMonth)
+      .order('currency', { ascending: true })
 
     if (error) throw error
-
-    const latestByCurrency = new Map<string, number>()
-
-    for (const row of (data ?? []) as CashBalanceRow[]) {
-      const currency = row.currency?.toUpperCase()
-      if (!currency || latestByCurrency.has(currency)) continue
-      latestByCurrency.set(currency, Number(row.amount))
-    }
 
     let cashTotal = 0
     const missing = new Set<string>()
 
-    latestByCurrency.forEach((amount, currency) => {
+    for (const row of (data ?? []) as CashBalanceRow[]) {
+      const currency = row.currency?.toUpperCase()
+      if (!currency) continue
       const rate = FX_TO_PLN[currency]
       if (!rate) {
         missing.add(currency)
-        return
+        continue
       }
 
-      cashTotal += amount * rate
-    })
+      cashTotal += Number(row.amount) * rate
+    }
 
     cashPln.value = Number(cashTotal.toFixed(2))
+
+    const today = new Date().toISOString().slice(0, 10)
+    const { data: stocksData, error: stocksError } = await supabase
+      .from('stocks_positions')
+      .select('current_price, closed_at')
+      .order('opened_at', { ascending: false })
+
+    if (stocksError) throw stocksError
+
+    let stocksTotal = 0
+    for (const row of (stocksData ?? []) as { current_price: number | string; closed_at: string | null }[]) {
+      const isClosed = !!row.closed_at && row.closed_at < today
+      if (isClosed) continue
+      stocksTotal += Number(row.current_price)
+    }
+
+    stocksPln.value = Number(stocksTotal.toFixed(2))
     missingCurrencies.value = Array.from(missing).sort()
   } catch (error) {
     errorMsg.value = error instanceof Error ? error.message : 'Nie udało się pobrać danych walet.'
@@ -134,6 +155,10 @@ watch(
       activeTab.value = 'cash'
       return
     }
+    if (tab === 'stocks') {
+      activeTab.value = 'stocks'
+      return
+    }
 
     activeTab.value = 'wallet'
   },
@@ -145,6 +170,8 @@ watch(activeTab, async (tab) => {
 
   if (tab === 'cash') {
     query.tab = 'cash'
+  } else if (tab === 'stocks') {
+    query.tab = 'stocks'
   } else {
     delete query.tab
   }

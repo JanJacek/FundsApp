@@ -1,5 +1,5 @@
 <template>
-  <section class="mx-auto w-full max-w-[980px] space-y-4">
+  <section class="mx-auto w-full max-w-[69rem] space-y-4">
     <p class="m-0 text-sm text-muted">Pick a month to see all cash positions for that period.</p>
 
     <FMonthCalendar v-model="selectedPeriodMonth" />
