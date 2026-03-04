@@ -33,6 +33,25 @@
         Masz już konto? Zaloguj się
       </router-link>
     </FCard>
+
+    <FPopup
+      :open="showRiskPopup"
+      :loading="loading"
+      title="Rejestracja na własną odpowiedzialność"
+      confirm-text="Rozumiem i rejestruję się"
+      cancel-text="Wróć"
+      @close="showRiskPopup = false"
+      @confirm="confirmRegistration"
+    >
+      <p class="m-0">
+        To nie jest aplikacja komercyjna. To projekt testowy/portfolio, bez gwarancji bezpieczeństwa,
+        ciągłości działania i ochrony danych.
+      </p>
+      <p class="mt-3">
+        Rejestrując konto, robisz to wyłącznie na własną odpowiedzialność. Nie podawaj prawdziwych
+        danych wrażliwych ani produkcyjnych.
+      </p>
+    </FPopup>
   </main>
 </template>
 
@@ -42,6 +61,7 @@ import FCard from '@/components/FCard.vue'
 import FField from '@/components/FField.vue'
 import FInput from '@/components/FInput.vue'
 import FMessage from '@/components/FMessage.vue'
+import FPopup from '@/components/FPopup.vue'
 import { useAuthStore } from '@/stores/auth'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -54,10 +74,16 @@ const password = ref('')
 const loading = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
+const showRiskPopup = ref(false)
 
-const onSubmit = async () => {
+const onSubmit = () => {
   errorMsg.value = ''
   successMsg.value = ''
+  showRiskPopup.value = true
+}
+
+const confirmRegistration = async () => {
+  showRiskPopup.value = false
   loading.value = true
 
   try {
