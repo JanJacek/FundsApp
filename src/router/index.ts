@@ -33,6 +33,10 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/cash',
+      redirect: '/?tab=cash',
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },

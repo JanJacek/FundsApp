@@ -1,14 +1,16 @@
 <template>
   <main class="min-h-[calc(100vh-4rem)] bg-dashboard p-6">
     <div class="w-full">
-      <p v-if="loading" class="mx-auto mb-4 max-w-[980px] text-sm text-muted">
+      <FDashboardNav v-model="activeTab" />
+
+      <p v-if="loading && activeTab === 'wallet'" class="mx-auto mb-4 max-w-[980px] text-sm text-muted">
         Ładowanie danych portfela...
       </p>
-      <p v-else-if="errorMsg" class="mx-auto mb-4 max-w-[980px] text-sm text-error">
+      <p v-else-if="errorMsg && activeTab === 'wallet'" class="mx-auto mb-4 max-w-[980px] text-sm text-error">
         {{ errorMsg }}
       </p>
 
-      <template v-else>
+      <template v-if="activeTab === 'wallet' && !loading && !errorMsg">
         <FWalet
           :cash-pln="cashInDisplayCurrency"
           :stocks-pln="stocksInDisplayCurrency"
@@ -19,15 +21,21 @@
           :missing-currencies="missingCurrencies"
         />
       </template>
+
+      <FCashPanel v-else-if="activeTab === 'cash'" />
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
+import FDashboardNav from '@/components/FDashboardNav.vue'
+import type { DashboardTab } from '@/components/FDashboardNav.vue'
+import FCashPanel from '@/components/FCashPanel.vue'
 import FWalet from '@/components/FWalet.vue'
 import { supabase } from '@/lib/supabase'
 import { useSettingsStore } from '@/stores/settings'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 type CashBalanceRow = {
   currency: string
@@ -50,6 +58,9 @@ const etfsPln = ref(0)
 const bondsPln = ref(0)
 const missingCurrencies = ref<string[]>([])
 const settings = useSettingsStore()
+const route = useRoute()
+const router = useRouter()
+const activeTab = ref<DashboardTab>('wallet')
 
 const convertFromPln = (amountPln: number) => {
   const rate = FX_TO_PLN[settings.displayCurrency]
@@ -114,6 +125,31 @@ onMounted(() => {
       console.error('Nie udało się pobrać ustawień portfela', error)
     }
   })()
+})
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (tab === 'cash') {
+      activeTab.value = 'cash'
+      return
+    }
+
+    activeTab.value = 'wallet'
+  },
+  { immediate: true },
+)
+
+watch(activeTab, async (tab) => {
+  const query = { ...route.query }
+
+  if (tab === 'cash') {
+    query.tab = 'cash'
+  } else {
+    delete query.tab
+  }
+
+  await router.replace({ query })
 })
 </script>
 
