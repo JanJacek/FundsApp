@@ -1,3 +1,17 @@
+<template>
+  <button
+    :type="props.type"
+    :disabled="props.disabled"
+    :class="[
+      'cursor-pointer rounded-[10px] px-[14px] py-[10px] font-bold transition disabled:cursor-not-allowed disabled:opacity-70',
+      variantClass,
+      props.customClass,
+    ]"
+  >
+    <slot />
+  </button>
+</template>
+
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -22,16 +36,4 @@ const variantClass = computed(() => {
 })
 </script>
 
-<template>
-  <button
-    :type="type"
-    :disabled="disabled"
-    :class="[
-      'cursor-pointer rounded-[10px] px-[14px] py-[10px] font-bold transition disabled:cursor-not-allowed disabled:opacity-70',
-      variantClass,
-      customClass,
-    ]"
-  >
-    <slot />
-  </button>
-</template>
+<style scoped></style>

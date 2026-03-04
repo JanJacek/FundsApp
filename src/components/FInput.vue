@@ -1,3 +1,16 @@
+<template>
+  <input
+    :value="props.modelValue"
+    :type="props.type"
+    :autocomplete="props.autocomplete"
+    :required="props.required"
+    :minlength="props.minlength"
+    :placeholder="props.placeholder"
+    class="rounded-[10px] border border-border px-3 py-2.5 text-base text-text outline-none"
+    @input="onInput"
+  />
+</template>
+
 <script setup lang="ts">
 const props = withDefaults(
   defineProps<{
@@ -27,15 +40,4 @@ const onInput = (event: Event) => {
 }
 </script>
 
-<template>
-  <input
-    :value="props.modelValue"
-    :type="props.type"
-    :autocomplete="props.autocomplete"
-    :required="props.required"
-    :minlength="props.minlength"
-    :placeholder="props.placeholder"
-    class="rounded-[10px] border border-border px-3 py-2.5 text-base text-text outline-none"
-    @input="onInput"
-  />
-</template>
+<style scoped></style>

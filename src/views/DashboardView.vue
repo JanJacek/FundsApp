@@ -1,18 +1,3 @@
-<script setup lang="ts">
-import { useRouter } from 'vue-router'
-import FButton from '@/components/FButton.vue'
-import FCard from '@/components/FCard.vue'
-import { useAuthStore } from '@/stores/auth'
-
-const router = useRouter()
-const auth = useAuthStore()
-
-const logout = async () => {
-  await auth.signOut()
-  await router.push('/login')
-}
-</script>
-
 <template>
   <main class="grid min-h-screen place-items-center bg-dashboard p-6">
     <FCard as="section" custom-class="max-w-[560px]">
@@ -27,3 +12,20 @@ const logout = async () => {
     </FCard>
   </main>
 </template>
+
+<script setup lang="ts">
+import FButton from '@/components/FButton.vue'
+import FCard from '@/components/FCard.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const auth = useAuthStore()
+
+const logout = async () => {
+  await auth.signOut()
+  await router.push('/login')
+}
+</script>
+
+<style scoped></style>

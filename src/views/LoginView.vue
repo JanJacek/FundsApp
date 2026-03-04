@@ -1,12 +1,38 @@
+<template>
+  <main class="grid min-h-screen place-items-center bg-auth p-6">
+    <FCard as="form" custom-class="grid max-w-[420px] gap-3" @submit.prevent="onSubmit">
+      <h1 class="mb-[6px] mt-0 text-[2em] font-bold leading-tight text-text">Logowanie</h1>
+
+      <FField label="Email">
+        <FInput v-model="email" type="email" autocomplete="email" required />
+      </FField>
+
+      <FField label="Hasło">
+        <FInput v-model="password" type="password" autocomplete="current-password" required />
+      </FField>
+
+      <FMessage v-if="errorMsg" variant="error">{{ errorMsg }}</FMessage>
+
+      <FButton :disabled="loading" type="submit">
+        {{ loading ? 'Logowanie...' : 'Zaloguj' }}
+      </FButton>
+
+      <router-link to="/register" class="text-muted hover:text-primary">
+        Nie masz konta? Zarejestruj się
+      </router-link>
+    </FCard>
+  </main>
+</template>
+
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import FButton from '@/components/FButton.vue'
 import FCard from '@/components/FCard.vue'
 import FField from '@/components/FField.vue'
 import FInput from '@/components/FInput.vue'
 import FMessage from '@/components/FMessage.vue'
 import { useAuthStore } from '@/stores/auth'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -31,38 +57,4 @@ const onSubmit = async () => {
 }
 </script>
 
-<template>
-  <main class="grid min-h-screen place-items-center bg-auth p-6">
-    <FCard as="form" custom-class="grid max-w-[420px] gap-3" @submit.prevent="onSubmit">
-      <h1 class="mb-[6px] mt-0 text-[2em] font-bold leading-tight text-text">Logowanie</h1>
-
-      <FField label="Email">
-        <FInput
-          v-model="email"
-          type="email"
-          autocomplete="email"
-          required
-        />
-      </FField>
-
-      <FField label="Hasło">
-        <FInput
-          v-model="password"
-          type="password"
-          autocomplete="current-password"
-          required
-        />
-      </FField>
-
-      <FMessage v-if="errorMsg" variant="error">{{ errorMsg }}</FMessage>
-
-      <FButton :disabled="loading" type="submit">
-        {{ loading ? 'Logowanie...' : 'Zaloguj' }}
-      </FButton>
-
-      <router-link to="/register" class="text-muted hover:text-primary">
-        Nie masz konta? Zarejestruj się
-      </router-link>
-    </FCard>
-  </main>
-</template>
+<style scoped></style>

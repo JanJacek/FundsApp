@@ -1,3 +1,9 @@
+<template>
+  <p :class="['m-0', variantClass]">
+    <slot />
+  </p>
+</template>
+
 <script setup lang="ts">
 import { computed } from 'vue'
 
@@ -17,8 +23,4 @@ const variantClass = computed(() => {
 })
 </script>
 
-<template>
-  <p :class="['m-0', variantClass]">
-    <slot />
-  </p>
-</template>
+<style scoped></style>

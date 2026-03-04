@@ -1,3 +1,9 @@
+<template>
+  <component :is="as" :class="['w-full rounded-[14px] bg-surface p-6 shadow-card', customClass]">
+    <slot />
+  </component>
+</template>
+
 <script setup lang="ts">
 withDefaults(
   defineProps<{
@@ -11,8 +17,4 @@ withDefaults(
 )
 </script>
 
-<template>
-  <component :is="as" :class="['w-full rounded-[14px] bg-surface p-6 shadow-card', customClass]">
-    <slot />
-  </component>
-</template>
+<style scoped></style>
