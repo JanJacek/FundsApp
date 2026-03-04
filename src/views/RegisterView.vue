@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import FButton from '@/components/FButton.vue'
+import FCard from '@/components/FCard.vue'
+import FField from '@/components/FField.vue'
+import FInput from '@/components/FInput.vue'
+import FMessage from '@/components/FMessage.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -31,49 +36,38 @@ const onSubmit = async () => {
 
 <template>
   <main class="grid min-h-screen place-items-center bg-auth p-6">
-    <form
-      class="grid w-full max-w-[420px] gap-3 rounded-[14px] bg-surface p-6 shadow-card"
-      @submit.prevent="onSubmit"
-    >
+    <FCard as="form" custom-class="grid max-w-[420px] gap-3" @submit.prevent="onSubmit">
       <h1 class="mb-[6px] mt-0 text-[2em] font-bold leading-tight text-text">Rejestracja</h1>
 
-      <label class="grid gap-[6px] font-semibold text-text">
-        Email
-        <input
+      <FField label="Email">
+        <FInput
           v-model="email"
           type="email"
           autocomplete="email"
           required
-          class="rounded-[10px] border border-border px-3 py-2.5 text-base text-text outline-none"
         />
-      </label>
+      </FField>
 
-      <label class="grid gap-[6px] font-semibold text-text">
-        Hasło
-        <input
+      <FField label="Hasło">
+        <FInput
           v-model="password"
           type="password"
           autocomplete="new-password"
-          minlength="6"
+          :minlength="6"
           required
-          class="rounded-[10px] border border-border px-3 py-2.5 text-base text-text outline-none"
         />
-      </label>
+      </FField>
 
-      <p v-if="errorMsg" class="m-0 text-error">{{ errorMsg }}</p>
-      <p v-if="successMsg" class="m-0 text-success">{{ successMsg }}</p>
+      <FMessage v-if="errorMsg" variant="error">{{ errorMsg }}</FMessage>
+      <FMessage v-if="successMsg" variant="success">{{ successMsg }}</FMessage>
 
-      <button
-        :disabled="loading"
-        type="submit"
-        class="cursor-pointer rounded-[10px] bg-primary px-[14px] py-[10px] font-bold text-surface disabled:cursor-not-allowed disabled:opacity-70"
-      >
+      <FButton :disabled="loading" type="submit">
         {{ loading ? 'Tworzenie konta...' : 'Utwórz konto' }}
-      </button>
+      </FButton>
 
       <router-link to="/login" class="text-muted hover:text-primary">
         Masz już konto? Zaloguj się
       </router-link>
-    </form>
+    </FCard>
   </main>
 </template>
