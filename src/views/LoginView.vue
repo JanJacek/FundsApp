@@ -27,85 +27,48 @@ const onSubmit = async () => {
 </script>
 
 <template>
-  <main class="auth-page">
-    <form class="auth-card" @submit.prevent="onSubmit">
-      <h1>Logowanie</h1>
+  <main class="grid min-h-screen place-items-center bg-auth p-6">
+    <form
+      class="grid w-full max-w-[420px] gap-3 rounded-[14px] bg-surface p-6 shadow-card"
+      @submit.prevent="onSubmit"
+    >
+      <h1 class="mb-[6px] mt-0 text-[2em] font-bold leading-tight text-text">Logowanie</h1>
 
-      <label>
+      <label class="grid gap-[6px] font-semibold text-text">
         Email
-        <input v-model="email" type="email" autocomplete="email" required />
+        <input
+          v-model="email"
+          type="email"
+          autocomplete="email"
+          required
+          class="rounded-[10px] border border-border px-3 py-2.5 text-base text-text outline-none"
+        />
       </label>
 
-      <label>
+      <label class="grid gap-[6px] font-semibold text-text">
         Hasło
-        <input v-model="password" type="password" autocomplete="current-password" required />
+        <input
+          v-model="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          class="rounded-[10px] border border-border px-3 py-2.5 text-base text-text outline-none"
+        />
       </label>
 
-      <p v-if="errorMsg" class="error">{{ errorMsg }}</p>
+      <p v-if="errorMsg" class="m-0 text-error">{{ errorMsg }}</p>
 
-      <button :disabled="loading" type="submit">
+      <button
+        :disabled="loading"
+        type="submit"
+        class="cursor-pointer rounded-[10px] bg-primary px-[14px] py-[10px] font-bold text-surface disabled:cursor-not-allowed disabled:opacity-70"
+      >
         {{ loading ? 'Logowanie...' : 'Zaloguj' }}
       </button>
 
-      <router-link to="/register">Nie masz konta? Zarejestruj się</router-link>
+      <router-link to="/register" class="text-muted hover:text-primary">
+        Nie masz konta? Zarejestruj się
+      </router-link>
     </form>
   </main>
 </template>
-
-<style scoped>
-.auth-page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: #f5f7fb;
-}
-
-.auth-card {
-  width: min(420px, 100%);
-  display: grid;
-  gap: 12px;
-  padding: 24px;
-  border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 10px 30px rgb(17 24 39 / 12%);
-}
-
-h1 {
-  margin: 0 0 6px;
-}
-
-label {
-  display: grid;
-  gap: 6px;
-  font-weight: 600;
-}
-
-input {
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font: inherit;
-}
-
-button {
-  border: 0;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font: inherit;
-  font-weight: 700;
-  color: #fff;
-  background: #0f172a;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.error {
-  margin: 0;
-  color: #b42318;
-}
-</style>

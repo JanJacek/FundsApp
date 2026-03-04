@@ -12,44 +12,20 @@ const logout = async () => {
 </script>
 
 <template>
-  <main class="dashboard">
-    <section class="card">
-      <h1>Panel</h1>
-      <p>Zalogowano jako: <strong>{{ auth.user?.email }}</strong></p>
-      <button type="button" @click="logout">Wyloguj</button>
+  <main class="grid min-h-screen place-items-center bg-dashboard p-6">
+    <section class="w-full max-w-[560px] rounded-[14px] bg-surface p-6 shadow-card">
+      <h1 class="mt-0 text-[2em] font-bold leading-tight text-text">Panel</h1>
+      <p class="mt-4 text-base text-text">
+        Zalogowano jako:
+        <strong class="text-text">{{ auth.user?.email }}</strong>
+      </p>
+      <button
+        type="button"
+        @click="logout"
+        class="mt-6 cursor-pointer rounded-[10px] bg-primary px-[14px] py-[10px] font-bold text-surface"
+      >
+        Wyloguj
+      </button>
     </section>
   </main>
 </template>
-
-<style scoped>
-.dashboard {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: #eef2ff;
-}
-
-.card {
-  width: min(560px, 100%);
-  background: #fff;
-  padding: 24px;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgb(17 24 39 / 12%);
-}
-
-h1 {
-  margin-top: 0;
-}
-
-button {
-  border: 0;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font: inherit;
-  font-weight: 700;
-  color: #fff;
-  background: #0f172a;
-  cursor: pointer;
-}
-</style>
