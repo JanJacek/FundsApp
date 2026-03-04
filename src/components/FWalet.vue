@@ -1,7 +1,10 @@
 <template>
   <section class="mx-auto w-full max-w-[980px]">
     <div class="rounded-[12px] border border-border bg-surface p-4">
-      <h2 class="m-0 text-xl font-bold text-text">Portfel - aktualny vs docelowy</h2>
+      <div class="flex flex-wrap items-end justify-between gap-2">
+        <h2 class="m-0 text-xl font-bold text-text">Portfel</h2>
+        <strong class="text-lg text-text">{{ formatCurrency(totalPln) }}</strong>
+      </div>
 
       <div class="mt-5 space-y-5">
         <article
@@ -119,48 +122,52 @@ const maxAxisValue = computed(() => {
 
 const safeTotal = computed(() => (totalPln.value > 0 ? totalPln.value : 1))
 
-const rows = computed(() => [
-  {
-    key: 'cash',
-    label: 'Gotówka',
-    value: props.cashPln,
-    color: '#f43f5e',
-    currentPct: (props.cashPln / safeTotal.value) * 100,
-    currentWidthPct: (props.cashPln / maxAxisValue.value) * 100,
-    targetWidthPct: ((safeTotal.value * (props.target.cashPct / 100)) / maxAxisValue.value) * 100,
-  },
-  {
-    key: 'stocks',
-    label: 'Akcje',
-    value: props.stocksPln,
-    color: '#22c55e',
-    currentPct: (props.stocksPln / safeTotal.value) * 100,
-    currentWidthPct: (props.stocksPln / maxAxisValue.value) * 100,
-    targetWidthPct: ((safeTotal.value * (props.target.stocksPct / 100)) / maxAxisValue.value) * 100,
-  },
-  {
-    key: 'etfs',
-    label: 'ETF-y',
-    value: props.etfsPln,
-    color: '#eab308',
-    currentPct: (props.etfsPln / safeTotal.value) * 100,
-    currentWidthPct: (props.etfsPln / maxAxisValue.value) * 100,
-    targetWidthPct: ((safeTotal.value * (props.target.etfsPct / 100)) / maxAxisValue.value) * 100,
-  },
-  {
-    key: 'bonds',
-    label: 'Obligacje',
-    value: props.bondsPln,
-    color: '#60a5fa',
-    currentPct: (props.bondsPln / safeTotal.value) * 100,
-    currentWidthPct: (props.bondsPln / maxAxisValue.value) * 100,
-    targetWidthPct: ((safeTotal.value * (props.target.bondsPct / 100)) / maxAxisValue.value) * 100,
-  },
-].map((row) => ({
-  ...row,
-  currentWidthPct: Math.max(0, Math.min(100, row.currentWidthPct)),
-  targetWidthPct: Math.max(0, Math.min(100, row.targetWidthPct)),
-})))
+const rows = computed(() =>
+  [
+    {
+      key: 'cash',
+      label: 'Gotówka',
+      value: props.cashPln,
+      color: '#f43f5e',
+      currentPct: (props.cashPln / safeTotal.value) * 100,
+      currentWidthPct: (props.cashPln / maxAxisValue.value) * 100,
+      targetWidthPct: ((safeTotal.value * (props.target.cashPct / 100)) / maxAxisValue.value) * 100,
+    },
+    {
+      key: 'stocks',
+      label: 'Akcje',
+      value: props.stocksPln,
+      color: '#22c55e',
+      currentPct: (props.stocksPln / safeTotal.value) * 100,
+      currentWidthPct: (props.stocksPln / maxAxisValue.value) * 100,
+      targetWidthPct:
+        ((safeTotal.value * (props.target.stocksPct / 100)) / maxAxisValue.value) * 100,
+    },
+    {
+      key: 'etfs',
+      label: 'ETF-y',
+      value: props.etfsPln,
+      color: '#eab308',
+      currentPct: (props.etfsPln / safeTotal.value) * 100,
+      currentWidthPct: (props.etfsPln / maxAxisValue.value) * 100,
+      targetWidthPct: ((safeTotal.value * (props.target.etfsPct / 100)) / maxAxisValue.value) * 100,
+    },
+    {
+      key: 'bonds',
+      label: 'Obligacje',
+      value: props.bondsPln,
+      color: '#60a5fa',
+      currentPct: (props.bondsPln / safeTotal.value) * 100,
+      currentWidthPct: (props.bondsPln / maxAxisValue.value) * 100,
+      targetWidthPct:
+        ((safeTotal.value * (props.target.bondsPct / 100)) / maxAxisValue.value) * 100,
+    },
+  ].map((row) => ({
+    ...row,
+    currentWidthPct: Math.max(0, Math.min(100, row.currentWidthPct)),
+    targetWidthPct: Math.max(0, Math.min(100, row.targetWidthPct)),
+  })),
+)
 
 const axisTicks = computed(() => {
   const max = maxAxisValue.value
