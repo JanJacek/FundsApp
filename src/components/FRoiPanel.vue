@@ -47,14 +47,14 @@
         <div class="mt-4 overflow-x-auto">
           <table class="w-full border-collapse text-sm">
             <thead>
-              <tr class="border-b border-border text-left text-muted">
-                <th class="px-3 py-2 font-semibold">Asset Class</th>
-                <th class="px-3 py-2 font-semibold">Invested</th>
-                <th class="px-3 py-2 font-semibold">Current</th>
-                <th class="px-3 py-2 font-semibold">ROI Gross</th>
-                <th class="px-3 py-2 font-semibold">ROI Gross %</th>
-                <th class="px-3 py-2 font-semibold">ROI Net</th>
-                <th class="px-3 py-2 font-semibold">ROI Net %</th>
+              <tr
+                v-for="(headersRow, rowIndex) in roiTableHeaderRows"
+                :key="`roi-head-row-${rowIndex}`"
+                class="border-b border-border text-left text-muted"
+              >
+                <th v-for="header in headersRow" :key="header" class="px-3 py-2 font-semibold">
+                  {{ header }}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -116,6 +116,8 @@ const BELKA_TAX_RATE = 0.19
 const settings = useSettingsStore()
 const loading = ref(false)
 const errorMsg = ref('')
+const roiTableHeaders = ['Asset Class', 'Invested', 'Current', 'ROI Gross', 'ROI Gross %', 'ROI Net', 'ROI Net %']
+const roiTableHeaderRows = [roiTableHeaders]
 
 const stocksOpenPln = ref(0)
 const stocksCurrentPln = ref(0)

@@ -26,61 +26,56 @@
           No cash positions for selected month.
         </p>
 
-        <div v-else class="overflow-x-auto">
-          <table class="min-w-full border-collapse text-sm">
-            <thead>
-              <tr class="border-b border-border text-left text-muted">
-                <th class="px-3 py-2 font-semibold">Currency</th>
-                <th class="px-3 py-2 font-semibold">Amount</th>
-                <th class="px-3 py-2 font-semibold">Value in PLN</th>
-                <th class="px-3 py-2 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in editableRows" :key="row.localId" class="border-b border-border/70">
-                <td class="px-3 py-2">
-                  <select
-                    v-model="row.currency"
-                    class="w-20 rounded-[8px] border border-border px-2 py-1 uppercase text-text outline-none"
-                    @change="void onCommit(row.localId)"
-                  >
-                    <option v-for="currency in allowedCurrencies" :key="currency" :value="currency">
-                      {{ currency }}
-                    </option>
-                  </select>
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model.number="row.amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    class="w-32 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2 text-text">{{ formatCurrency(valueInPln(row)) }}</td>
-                <td class="px-3 py-2">
-                  <div class="flex items-center gap-2">
-                    <button
-                      type="button"
-                      class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
-                      :disabled="row.isSaving"
-                      @click="deleteRow(row.localId)"
-                      aria-label="Delete row"
-                      title="Delete row"
-                    >
-                      <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
-                        <path :d="mdiDeleteOutline" />
-                      </svg>
-                    </button>
-                  </div>
-                  <p v-if="row.error" class="mt-1 text-xs text-error">{{ row.error }}</p>
-                </td>
-              </tr>
-            </tbody>
-            <tfoot>
+        <FTable
+          v-else
+          table-class="min-w-full border-collapse text-sm"
+          :headers="cashTableHeaders"
+          :rows="editableRows"
+          row-key="localId"
+        >
+          <template #cell="{ row, header }">
+            <select
+              v-if="header.key === 'currency'"
+              v-model="row.currency"
+              class="w-20 rounded-[8px] border border-border px-2 py-1 uppercase text-text outline-none"
+              @change="void onCommit(row.localId)"
+            >
+              <option v-for="currency in allowedCurrencies" :key="currency" :value="currency">
+                {{ currency }}
+              </option>
+            </select>
+            <input
+              v-else-if="header.key === 'amount'"
+              v-model.number="row.amount"
+              type="number"
+              min="0"
+              step="0.01"
+              class="w-32 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <span v-else-if="header.key === 'valueInPln'" class="text-text">
+              {{ formatCurrency(valueInPln(row)) }}
+            </span>
+            <div v-else-if="header.key === 'actions'">
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="row.isSaving"
+                  @click="deleteRow(row.localId)"
+                  aria-label="Delete row"
+                  title="Delete row"
+                >
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
+                    <path :d="mdiDeleteOutline" />
+                  </svg>
+                </button>
+              </div>
+              <p v-if="row.error" class="mt-1 text-xs text-error">{{ row.error }}</p>
+            </div>
+          </template>
+          <template #footer>
               <tr class="border-t border-border bg-background/50">
                 <td class="px-3 py-2 font-semibold text-text" colspan="2">
                   Cash na ostatni dzień miesiąca
@@ -88,9 +83,8 @@
                 <td class="px-3 py-2 font-bold text-text">{{ formatCurrency(totalPln) }}</td>
                 <td class="px-3 py-2" />
               </tr>
-            </tfoot>
-          </table>
-        </div>
+          </template>
+        </FTable>
 
         <p v-if="missingRates.length" class="mt-2 text-xs text-error">
           Missing rates up to cutoff date for: {{ missingRates.join(', ') }}.
@@ -102,6 +96,8 @@
 
 <script setup lang="ts">
 import FMonthCalendar from '@/components/FMonthCalendar.vue'
+import FTable from '@/components/FTable.vue'
+import type { FTableHeader } from '@/components/FTable.vue'
 import { mdiDeleteOutline } from '@mdi/js'
 import { supabase } from '@/lib/supabase'
 import { computed, ref, watch } from 'vue'
@@ -131,6 +127,12 @@ type FxRateRow = {
 const now = new Date()
 const initialMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 const allowedCurrencies = ['PLN', 'EUR', 'USD'] as const
+const cashTableHeaders: FTableHeader[] = [
+  { key: 'currency', label: 'Currency' },
+  { key: 'amount', label: 'Amount' },
+  { key: 'valueInPln', label: 'Value in PLN' },
+  { key: 'actions', label: 'Actions' },
+]
 
 const selectedPeriodMonth = ref(initialMonth)
 const rows = ref<CashRow[]>([])

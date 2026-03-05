@@ -27,102 +27,77 @@
           No ETF positions yet.
         </p>
 
-        <div v-else class="overflow-x-auto">
-          <table class="w-full border-collapse text-sm">
-            <thead>
-              <tr class="border-b border-border text-left text-muted">
-                <th class="px-3 py-2 font-semibold">Name</th>
-                <th class="px-3 py-2 font-semibold">Current Price</th>
-                <th class="px-3 py-2 font-semibold">Open Price</th>
-                <th class="px-3 py-2 font-semibold">Profit/Loss</th>
-                <th class="px-3 py-2 font-semibold">Open Date</th>
-                <th class="px-3 py-2 font-semibold">Close Date</th>
-                <th class="px-3 py-2 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="row in editableRows"
-                :key="row.localId"
-                class="border-b border-border/70"
+        <FTable v-else :headers="etfsTableHeaders" :rows="editableRows" row-key="localId">
+          <template #cell="{ row, header }">
+            <input
+              v-if="header.key === 'name'"
+              v-model="row.name"
+              type="text"
+              maxlength="120"
+              class="w-44 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <input
+              v-else-if="header.key === 'currentPrice'"
+              v-model.number="row.currentPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              class="w-32 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <input
+              v-else-if="header.key === 'openPrice'"
+              v-model.number="row.openPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              class="w-32 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <span
+              v-else-if="header.key === 'profitLoss'"
+              class="font-semibold"
+              :class="rowProfitLoss(row) >= 0 ? 'text-success' : 'text-error'"
+            >
+              {{ formatSignedCurrency(rowProfitLoss(row)) }}
+            </span>
+            <input
+              v-else-if="header.key === 'openedAt'"
+              v-model="row.openedAt"
+              type="date"
+              class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <input
+              v-else-if="header.key === 'closedAt'"
+              v-model="row.closedAt"
+              type="date"
+              class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <div v-else-if="header.key === 'actions'">
+              <button
+                type="button"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="row.isSaving"
+                @click="deleteRow(row.localId)"
+                aria-label="Delete row"
+                title="Delete row"
               >
-                <td class="px-3 py-2">
-                  <input
-                    v-model="row.name"
-                    type="text"
-                    maxlength="120"
-                    class="w-44 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model.number="row.currentPrice"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    class="w-32 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model.number="row.openPrice"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    class="w-32 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <span
-                    class="font-semibold"
-                    :class="rowProfitLoss(row) >= 0 ? 'text-success' : 'text-error'"
-                  >
-                    {{ formatSignedCurrency(rowProfitLoss(row)) }}
-                  </span>
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model="row.openedAt"
-                    type="date"
-                    class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model="row.closedAt"
-                    type="date"
-                    class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <button
-                    type="button"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
-                    :disabled="row.isSaving"
-                    @click="deleteRow(row.localId)"
-                    aria-label="Delete row"
-                    title="Delete row"
-                  >
-                    <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
-                      <path :d="mdiDeleteOutline" />
-                    </svg>
-                  </button>
-                  <p v-if="row.error" class="mt-1 text-xs text-error">{{ row.error }}</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
+                  <path :d="mdiDeleteOutline" />
+                </svg>
+              </button>
+              <p v-if="row.error" class="mt-1 text-xs text-error">{{ row.error }}</p>
+            </div>
+          </template>
+        </FTable>
       </template>
     </section>
   </section>
@@ -131,6 +106,8 @@
 <script setup lang="ts">
 import { mdiDeleteOutline } from '@mdi/js'
 import FMonthCalendar from '@/components/FMonthCalendar.vue'
+import FTable from '@/components/FTable.vue'
+import type { FTableHeader } from '@/components/FTable.vue'
 import { supabase } from '@/lib/supabase'
 import { computed, ref, watch } from 'vue'
 
@@ -159,6 +136,15 @@ type EditableEtfRow = {
 const loading = ref(false)
 const errorMsg = ref('')
 const editableRows = ref<EditableEtfRow[]>([])
+const etfsTableHeaders: FTableHeader[] = [
+  { key: 'name', label: 'Name' },
+  { key: 'currentPrice', label: 'Current Price' },
+  { key: 'openPrice', label: 'Open Price' },
+  { key: 'profitLoss', label: 'Profit/Loss' },
+  { key: 'openedAt', label: 'Open Date' },
+  { key: 'closedAt', label: 'Close Date' },
+  { key: 'actions', label: 'Actions' },
+]
 const now = new Date()
 const initialMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 const selectedPeriodMonth = ref(initialMonth)

@@ -27,114 +27,101 @@
           No bonds for this month.
         </p>
 
-        <div v-else class="overflow-x-auto">
-          <table class="w-full border-collapse text-sm">
-            <thead>
-              <tr class="border-b border-border text-left text-muted">
-                <th class="px-3 py-2 font-semibold">Type</th>
-                <th class="px-3 py-2 font-semibold">Purchase Date</th>
-                <th class="px-3 py-2 font-semibold">Maturity Date</th>
-                <th class="px-3 py-2 font-semibold">Quantity</th>
-                <th class="px-3 py-2 font-semibold">Nominal</th>
-                <th class="px-3 py-2 font-semibold">Rate (decimal)</th>
-                <th class="px-3 py-2 font-semibold">Purchase Value</th>
-                <th class="px-3 py-2 font-semibold">Interest</th>
-                <th class="px-3 py-2 font-semibold">Final Value</th>
-                <th class="px-3 py-2 font-semibold">ROI</th>
-                <th class="px-3 py-2 font-semibold">Status</th>
-                <th class="px-3 py-2 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in editableRows" :key="row.localId" class="border-b border-border/70">
-                <td class="px-3 py-2">
-                  <select
-                    v-model="row.bondType"
-                    class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @change="onRowInput(row.localId); void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  >
-                    <option value="OTS">OTS</option>
-                    <option value="TOS">TOS</option>
-                  </select>
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model="row.purchaseDate"
-                    type="date"
-                    class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @input="onRowInput(row.localId)"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2 text-text">{{ row.maturityDate }}</td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model.number="row.quantity"
-                    type="number"
-                    min="1"
-                    step="1"
-                    class="w-24 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @input="onRowInput(row.localId)"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model.number="row.nominalPerBond"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    class="w-24 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @input="onRowInput(row.localId)"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model.number="row.interestRate"
-                    type="number"
-                    min="0"
-                    step="0.0001"
-                    class="w-28 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @input="onRowInput(row.localId)"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2 text-text">{{ formatCurrency(row.calc.purchaseValue) }}</td>
-                <td class="px-3 py-2 text-text">{{ formatCurrency(row.calc.interest) }}</td>
-                <td class="px-3 py-2 text-text">{{ formatCurrency(row.calc.finalValue) }}</td>
-                <td class="px-3 py-2 font-semibold" :class="row.calc.roi >= 0 ? 'text-success' : 'text-error'">
-                  {{ formatPercent(row.calc.roi) }}
-                </td>
-                <td class="px-3 py-2">
-                  <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="row.calc.status === 'OPEN' ? 'bg-success/15 text-success' : 'bg-muted/20 text-muted'">
-                    {{ row.calc.status }}
-                  </span>
-                </td>
-                <td class="px-3 py-2">
-                  <button
-                    type="button"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
-                    :disabled="row.isSaving"
-                    @click="deleteRow(row.localId)"
-                    aria-label="Delete row"
-                    title="Delete row"
-                  >
-                    <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
-                      <path :d="mdiDeleteOutline" />
-                    </svg>
-                  </button>
-                  <p v-if="row.error" class="mt-1 text-xs text-error">{{ row.error }}</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <FTable v-else :headers="bondsTableHeaders" :rows="editableRows" row-key="localId">
+          <template #cell="{ row, header }">
+            <select
+              v-if="header.key === 'bondType'"
+              v-model="row.bondType"
+              class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @change="onRowInput(row.localId); void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            >
+              <option value="OTS">OTS</option>
+              <option value="TOS">TOS</option>
+            </select>
+            <input
+              v-else-if="header.key === 'purchaseDate'"
+              v-model="row.purchaseDate"
+              type="date"
+              class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @input="onRowInput(row.localId)"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <span v-else-if="header.key === 'maturityDate'" class="text-text">{{ row.maturityDate }}</span>
+            <input
+              v-else-if="header.key === 'quantity'"
+              v-model.number="row.quantity"
+              type="number"
+              min="1"
+              step="1"
+              class="w-24 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @input="onRowInput(row.localId)"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <input
+              v-else-if="header.key === 'nominalPerBond'"
+              v-model.number="row.nominalPerBond"
+              type="number"
+              min="0.01"
+              step="0.01"
+              class="w-24 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @input="onRowInput(row.localId)"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <input
+              v-else-if="header.key === 'interestRate'"
+              v-model.number="row.interestRate"
+              type="number"
+              min="0"
+              step="0.0001"
+              class="w-28 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @input="onRowInput(row.localId)"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <span v-else-if="header.key === 'purchaseValue'" class="text-text">
+              {{ formatCurrency(row.calc.purchaseValue) }}
+            </span>
+            <span v-else-if="header.key === 'interest'" class="text-text">
+              {{ formatCurrency(row.calc.interest) }}
+            </span>
+            <span v-else-if="header.key === 'finalValue'" class="text-text">
+              {{ formatCurrency(row.calc.finalValue) }}
+            </span>
+            <span
+              v-else-if="header.key === 'roi'"
+              class="font-semibold"
+              :class="row.calc.roi >= 0 ? 'text-success' : 'text-error'"
+            >
+              {{ formatPercent(row.calc.roi) }}
+            </span>
+            <span
+              v-else-if="header.key === 'status'"
+              class="rounded-full px-2 py-0.5 text-xs font-semibold"
+              :class="row.calc.status === 'OPEN' ? 'bg-success/15 text-success' : 'bg-muted/20 text-muted'"
+            >
+              {{ row.calc.status }}
+            </span>
+            <div v-else-if="header.key === 'actions'">
+              <button
+                type="button"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="row.isSaving"
+                @click="deleteRow(row.localId)"
+                aria-label="Delete row"
+                title="Delete row"
+              >
+                <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
+                  <path :d="mdiDeleteOutline" />
+                </svg>
+              </button>
+              <p v-if="row.error" class="mt-1 text-xs text-error">{{ row.error }}</p>
+            </div>
+          </template>
+        </FTable>
       </template>
     </section>
   </section>
@@ -144,6 +131,8 @@
 import { mdiDeleteOutline } from '@mdi/js'
 import { calculateBondPosition, getBondMaturityDate, type BondCalculation, type BondPosition, type BondType } from '@/lib/bonds'
 import FMonthCalendar from '@/components/FMonthCalendar.vue'
+import FTable from '@/components/FTable.vue'
+import type { FTableHeader } from '@/components/FTable.vue'
 import { supabase } from '@/lib/supabase'
 import { computed, ref, watch } from 'vue'
 
@@ -175,6 +164,20 @@ type EditableBondRow = {
 const loading = ref(false)
 const errorMsg = ref('')
 const editableRows = ref<EditableBondRow[]>([])
+const bondsTableHeaders: FTableHeader[] = [
+  { key: 'bondType', label: 'Type' },
+  { key: 'purchaseDate', label: 'Purchase Date' },
+  { key: 'maturityDate', label: 'Maturity Date' },
+  { key: 'quantity', label: 'Quantity' },
+  { key: 'nominalPerBond', label: 'Nominal' },
+  { key: 'interestRate', label: 'Rate (decimal)' },
+  { key: 'purchaseValue', label: 'Purchase Value' },
+  { key: 'interest', label: 'Interest' },
+  { key: 'finalValue', label: 'Final Value' },
+  { key: 'roi', label: 'ROI' },
+  { key: 'status', label: 'Status' },
+  { key: 'actions', label: 'Actions' },
+]
 
 const now = new Date()
 const initialMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
