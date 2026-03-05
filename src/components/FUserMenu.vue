@@ -17,17 +17,6 @@
       class="absolute right-0 top-11 z-50 w-52 rounded-[12px] border border-border bg-surface p-1 shadow-card"
     >
       <router-link
-        to="/?tab=cash"
-        class="flex items-center gap-2 rounded-[8px] px-3 py-2 text-sm text-text hover:bg-primary/5"
-        @click="closeMenu"
-      >
-        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path :d="mdiCashMultiple" />
-        </svg>
-        Cash
-      </router-link>
-
-      <router-link
         to="/settings"
         class="flex items-center gap-2 rounded-[8px] px-3 py-2 text-sm text-text hover:bg-primary/5"
         @click="closeMenu"
@@ -53,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCashMultiple, mdiCogOutline, mdiLogoutVariant } from '@mdi/js'
+import { mdiCogOutline, mdiLogoutVariant } from '@mdi/js'
 import FAvatar from '@/components/FAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
