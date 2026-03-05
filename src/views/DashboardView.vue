@@ -230,6 +230,10 @@ watch(
 )
 
 watch(activeTab, async (tab) => {
+  if (tab === 'wallet') {
+    await loadWalletData()
+  }
+
   const query = { ...route.query }
 
   if (tab === 'cash') {
