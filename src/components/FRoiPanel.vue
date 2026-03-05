@@ -99,6 +99,7 @@ import { supabase } from '@/lib/supabase'
 import { computed, onMounted, ref } from 'vue'
 
 type PositionRow = {
+  quantity: number
   opening_price: number | string
   current_price: number | string
   closed_at: string | null
@@ -193,10 +194,10 @@ const loadRoiData = async () => {
     const [stocksRes, etfsRes, bondsRes] = await Promise.all([
       supabase
         .from('stocks_positions')
-        .select('opening_price, current_price, closed_at'),
+        .select('quantity, opening_price, current_price, closed_at'),
       supabase
         .from('etfs_positions')
-        .select('opening_price, current_price, closed_at'),
+        .select('quantity, opening_price, current_price, closed_at'),
       supabase
         .from('bonds_positions')
         .select('id, bond_type, purchase_date, maturity_date, quantity, nominal_per_bond, interest_rate'),
@@ -207,13 +208,13 @@ const loadRoiData = async () => {
     if (bondsRes.error) throw bondsRes.error
 
     for (const row of (stocksRes.data ?? []) as PositionRow[]) {
-      stocksOpenPln.value += Number(row.opening_price)
-      stocksCurrentPln.value += Number(row.current_price)
+      stocksOpenPln.value += Number(row.opening_price) * Number(row.quantity)
+      stocksCurrentPln.value += Number(row.current_price) * Number(row.quantity)
     }
 
     for (const row of (etfsRes.data ?? []) as PositionRow[]) {
-      etfsOpenPln.value += Number(row.opening_price)
-      etfsCurrentPln.value += Number(row.current_price)
+      etfsOpenPln.value += Number(row.opening_price) * Number(row.quantity)
+      etfsCurrentPln.value += Number(row.current_price) * Number(row.quantity)
     }
 
     for (const row of (bondsRes.data ?? []) as BondRow[]) {

@@ -39,6 +39,16 @@
               @blur="void onCommit(row.localId)"
             />
             <input
+              v-else-if="header.key === 'quantity'"
+              v-model.number="row.quantity"
+              type="number"
+              min="1"
+              step="0.0001"
+              class="w-20 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
+            <input
               v-else-if="header.key === 'currentPrice'"
               v-model.number="row.currentPrice"
               type="number"
@@ -116,6 +126,7 @@ import { computed, ref, watch } from 'vue'
 type EtfRow = {
   id: string
   name: string
+  quantity: number
   current_price: number | string
   opening_price: number | string
   opened_at: string
@@ -126,6 +137,7 @@ type EditableEtfRow = {
   localId: string
   id: string | null
   name: string
+  quantity: number
   currentPrice: number
   openPrice: number
   openedAt: string
@@ -140,6 +152,7 @@ const errorMsg = ref('')
 const editableRows = ref<EditableEtfRow[]>([])
 const etfsTableHeaders: FTableHeader[] = [
   { key: 'name', label: 'Name' },
+  { key: 'quantity', label: 'Quantity', numeric: true, align: 'left' },
   { key: 'currentPrice', label: 'Current Price', numeric: true, align: 'left' },
   { key: 'openPrice', label: 'Open Price', numeric: true, align: 'left' },
   { key: 'profitLoss', label: 'Profit/Loss', numeric: true },
@@ -171,6 +184,7 @@ const getMonthBounds = (periodMonth: string) => {
 const getRowSignature = (row: EditableEtfRow) =>
   JSON.stringify({
     name: row.name.trim(),
+    quantity: row.quantity,
     currentPrice: Number.isFinite(row.currentPrice) ? Number(row.currentPrice.toFixed(2)) : row.currentPrice,
     openPrice: Number.isFinite(row.openPrice) ? Number(row.openPrice.toFixed(2)) : row.openPrice,
     openedAt: row.openedAt,
@@ -185,7 +199,7 @@ const loadRows = async () => {
     const { monthStart, monthEnd } = getMonthBounds(selectedPeriodMonth.value)
     const { data, error } = await supabase
       .from('etfs_positions')
-      .select('id, name, current_price, opening_price, opened_at, closed_at')
+      .select('id, name, quantity, current_price, opening_price, opened_at, closed_at')
       .lte('opened_at', monthEnd)
       .or(`closed_at.is.null,closed_at.gte.${monthStart}`)
       .order('opened_at', { ascending: false })
@@ -198,6 +212,7 @@ const loadRows = async () => {
         localId: row.id,
         id: row.id,
         name: row.name,
+        quantity: Number(row.quantity),
         currentPrice: Number(row.current_price),
         openPrice: Number(row.opening_price),
         openedAt: row.opened_at,
@@ -226,6 +241,7 @@ const addRow = () => {
     localId: `new-${Date.now()}-${Math.random()}`,
     id: null,
     name: '',
+    quantity: 1,
     currentPrice: 0,
     openPrice: 0,
     openedAt: selectedPeriodMonth.value,
@@ -239,10 +255,11 @@ const addRow = () => {
   editableRows.value.unshift(editableRow)
 }
 
-const rowProfitLoss = (row: EditableEtfRow) => row.currentPrice - row.openPrice
+const rowProfitLoss = (row: EditableEtfRow) => (row.currentPrice - row.openPrice) * row.quantity
 
 const validateRow = (row: EditableEtfRow) => {
   if (row.name.trim().length < 1) return 'Name is required.'
+  if (!Number.isFinite(row.quantity) || row.quantity <= 0) return 'Quantity must be > 0.'
   if (!Number.isFinite(row.currentPrice) || row.currentPrice < 0) return 'Current price must be >= 0.'
   if (!Number.isFinite(row.openPrice) || row.openPrice < 0) return 'Open price must be >= 0.'
   if (!row.openedAt) return 'Open date is required.'
@@ -260,6 +277,7 @@ const saveRow = async (localId: string) => {
 
   const payload = {
     name: row.name.trim(),
+    quantity: row.quantity,
     current_price: Number(row.currentPrice.toFixed(2)),
     opening_price: Number(row.openPrice.toFixed(2)),
     opened_at: row.openedAt,

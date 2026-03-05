@@ -124,31 +124,35 @@ const loadWalletData = async () => {
     const today = new Date().toISOString().slice(0, 10)
     const { data: stocksData, error: stocksError } = await supabase
       .from('stocks_positions')
-      .select('current_price, closed_at')
+      .select('current_price, quantity, closed_at')
       .order('opened_at', { ascending: false })
 
     if (stocksError) throw stocksError
 
     let stocksTotal = 0
-    for (const row of (stocksData ?? []) as { current_price: number | string; closed_at: string | null }[]) {
+    for (const row of (
+      stocksData ?? []
+    ) as { current_price: number | string; quantity: number; closed_at: string | null }[]) {
       const isClosed = !!row.closed_at && row.closed_at < today
       if (isClosed) continue
-      stocksTotal += Number(row.current_price)
+      stocksTotal += Number(row.current_price) * Number(row.quantity)
     }
     stocksPln.value = Number(stocksTotal.toFixed(2))
 
     const { data: etfsData, error: etfsError } = await supabase
       .from('etfs_positions')
-      .select('current_price, closed_at')
+      .select('current_price, quantity, closed_at')
       .order('opened_at', { ascending: false })
 
     if (etfsError) throw etfsError
 
     let etfsTotal = 0
-    for (const row of (etfsData ?? []) as { current_price: number | string; closed_at: string | null }[]) {
+    for (const row of (
+      etfsData ?? []
+    ) as { current_price: number | string; quantity: number; closed_at: string | null }[]) {
       const isClosed = !!row.closed_at && row.closed_at < today
       if (isClosed) continue
-      etfsTotal += Number(row.current_price)
+      etfsTotal += Number(row.current_price) * Number(row.quantity)
     }
     etfsPln.value = Number(etfsTotal.toFixed(2))
 

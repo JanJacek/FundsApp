@@ -102,6 +102,7 @@ type CashBalanceRow = {
 }
 
 type PriceRow = {
+  quantity: number
   current_price: number | string
   opened_at: string
   closed_at: string | null
@@ -216,11 +217,11 @@ const loadProgress = async () => {
         .lte('period_month', lastMonth),
       supabase
         .from('stocks_positions')
-        .select('current_price, opened_at, closed_at')
+        .select('quantity, current_price, opened_at, closed_at')
         .lte('opened_at', monthEnd),
       supabase
         .from('etfs_positions')
-        .select('current_price, opened_at, closed_at')
+        .select('quantity, current_price, opened_at, closed_at')
         .lte('opened_at', monthEnd),
       supabase
         .from('bonds_positions')
@@ -258,13 +259,13 @@ const loadProgress = async () => {
 
       for (const row of stockRows) {
         if (row.opened_at <= monthEndLocal && (!row.closed_at || row.closed_at >= monthStartLocal)) {
-          dynamicTotal += Number(row.current_price)
+          dynamicTotal += Number(row.current_price) * Number(row.quantity)
         }
       }
 
       for (const row of etfRows) {
         if (row.opened_at <= monthEndLocal && (!row.closed_at || row.closed_at >= monthStartLocal)) {
-          dynamicTotal += Number(row.current_price)
+          dynamicTotal += Number(row.current_price) * Number(row.quantity)
         }
       }
 
