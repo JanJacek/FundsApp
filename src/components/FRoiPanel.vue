@@ -62,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+import { calculateBondPosition, type BondPosition, type BondType } from '@/lib/bonds'
 import { useSettingsStore } from '@/stores/settings'
 import { supabase } from '@/lib/supabase'
 import { computed, onMounted, ref } from 'vue'
@@ -73,10 +74,13 @@ type PositionRow = {
 }
 
 type BondRow = {
-  opening_value: number | string
-  current_value: number | string
-  currency: string
+  id: string
+  bond_type: BondType
+  purchase_date: string
   maturity_date: string
+  quantity: number
+  nominal_per_bond: number | string
+  interest_rate: number | string
 }
 
 const FX_TO_PLN: Record<string, number> = {
@@ -144,7 +148,7 @@ const loadRoiData = async () => {
         .select('opening_price, current_price, closed_at'),
       supabase
         .from('bonds_positions')
-        .select('opening_value, current_value, currency, maturity_date'),
+        .select('id, bond_type, purchase_date, maturity_date, quantity, nominal_per_bond, interest_rate'),
     ])
 
     if (stocksRes.error) throw stocksRes.error
@@ -162,9 +166,19 @@ const loadRoiData = async () => {
     }
 
     for (const row of (bondsRes.data ?? []) as BondRow[]) {
-      const rate = FX_TO_PLN[row.currency.toUpperCase()] || 1
-      bondsOpenPln.value += Number(row.opening_value) * rate
-      bondsCurrentPln.value += Number(row.current_value) * rate
+      const position: BondPosition = {
+        id: row.id,
+        bondType: row.bond_type,
+        purchaseDate: row.purchase_date,
+        maturityDate: row.maturity_date,
+        quantity: Number(row.quantity),
+        nominalPerBond: Number(row.nominal_per_bond),
+        interestRate: Number(row.interest_rate),
+      }
+
+      const calc = calculateBondPosition(position)
+      bondsOpenPln.value += calc.purchaseValue
+      bondsCurrentPln.value += calc.finalValue
     }
 
     stocksOpenPln.value = Number(stocksOpenPln.value.toFixed(2))

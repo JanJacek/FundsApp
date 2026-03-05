@@ -31,106 +31,89 @@
           <table class="w-full border-collapse text-sm">
             <thead>
               <tr class="border-b border-border text-left text-muted">
-                <th class="px-3 py-2 font-semibold">Name</th>
-                <th class="px-3 py-2 font-semibold">Currency</th>
+                <th class="px-3 py-2 font-semibold">Type</th>
                 <th class="px-3 py-2 font-semibold">Purchase Date</th>
-                <th class="px-3 py-2 font-semibold">Term (months)</th>
                 <th class="px-3 py-2 font-semibold">Maturity Date</th>
-                <th class="px-3 py-2 font-semibold">Opening Value</th>
-                <th class="px-3 py-2 font-semibold">Current Value</th>
-                <th class="px-3 py-2 font-semibold">Interest %</th>
-                <th class="px-3 py-2 font-semibold">P/L</th>
+                <th class="px-3 py-2 font-semibold">Quantity</th>
+                <th class="px-3 py-2 font-semibold">Nominal</th>
+                <th class="px-3 py-2 font-semibold">Rate (decimal)</th>
+                <th class="px-3 py-2 font-semibold">Purchase Value</th>
+                <th class="px-3 py-2 font-semibold">Interest</th>
+                <th class="px-3 py-2 font-semibold">Final Value</th>
+                <th class="px-3 py-2 font-semibold">ROI</th>
+                <th class="px-3 py-2 font-semibold">Status</th>
                 <th class="px-3 py-2 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="row in editableRows"
-                :key="row.localId"
-                class="border-b border-border/70"
-              >
+              <tr v-for="row in editableRows" :key="row.localId" class="border-b border-border/70">
                 <td class="px-3 py-2">
-                  <input
-                    v-model="row.name"
-                    type="text"
-                    maxlength="120"
-                    class="w-40 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
+                  <select
+                    v-model="row.bondType"
+                    class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+                    @change="onRowInput(row.localId); void onCommit(row.localId)"
                     @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model="row.currency"
-                    type="text"
-                    maxlength="3"
-                    class="w-16 rounded-[8px] border border-border px-2 py-1 uppercase text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
+                  >
+                    <option value="OTS">OTS</option>
+                    <option value="TOS">TOS</option>
+                  </select>
                 </td>
                 <td class="px-3 py-2">
                   <input
                     v-model="row.purchaseDate"
                     type="date"
                     class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+                    @input="onRowInput(row.localId)"
                     @keydown.enter.prevent="void onCommit(row.localId)"
                     @blur="void onCommit(row.localId)"
                   />
                 </td>
+                <td class="px-3 py-2 text-text">{{ row.maturityDate }}</td>
                 <td class="px-3 py-2">
                   <input
-                    v-model.number="row.termMonths"
+                    v-model.number="row.quantity"
                     type="number"
                     min="1"
                     step="1"
                     class="w-24 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2 text-text">
-                  {{ row.maturityDate || '-' }}
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model.number="row.openingValue"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    class="w-28 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+                    @input="onRowInput(row.localId)"
                     @keydown.enter.prevent="void onCommit(row.localId)"
                     @blur="void onCommit(row.localId)"
                   />
                 </td>
                 <td class="px-3 py-2">
                   <input
-                    v-model.number="row.currentValue"
+                    v-model.number="row.nominalPerBond"
                     type="number"
-                    min="0"
-                    step="0.01"
-                    class="w-28 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model.number="row.interestRatePct"
-                    type="number"
-                    min="0"
+                    min="0.01"
                     step="0.01"
                     class="w-24 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+                    @input="onRowInput(row.localId)"
                     @keydown.enter.prevent="void onCommit(row.localId)"
                     @blur="void onCommit(row.localId)"
                   />
                 </td>
                 <td class="px-3 py-2">
-                  <span
-                    class="font-semibold"
-                    :class="rowProfitLoss(row) >= 0 ? 'text-success' : 'text-error'"
-                  >
-                    {{ formatSignedCurrency(rowProfitLoss(row), row.currency) }}
+                  <input
+                    v-model.number="row.interestRate"
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    class="w-28 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+                    @input="onRowInput(row.localId)"
+                    @keydown.enter.prevent="void onCommit(row.localId)"
+                    @blur="void onCommit(row.localId)"
+                  />
+                </td>
+                <td class="px-3 py-2 text-text">{{ formatCurrency(row.calc.purchaseValue) }}</td>
+                <td class="px-3 py-2 text-text">{{ formatCurrency(row.calc.interest) }}</td>
+                <td class="px-3 py-2 text-text">{{ formatCurrency(row.calc.finalValue) }}</td>
+                <td class="px-3 py-2 font-semibold" :class="row.calc.roi >= 0 ? 'text-success' : 'text-error'">
+                  {{ formatPercent(row.calc.roi) }}
+                </td>
+                <td class="px-3 py-2">
+                  <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="row.calc.status === 'OPEN' ? 'bg-success/15 text-success' : 'bg-muted/20 text-muted'">
+                    {{ row.calc.status }}
                   </span>
                 </td>
                 <td class="px-3 py-2">
@@ -159,33 +142,31 @@
 
 <script setup lang="ts">
 import { mdiDeleteOutline } from '@mdi/js'
+import { calculateBondPosition, getBondMaturityDate, type BondCalculation, type BondPosition, type BondType } from '@/lib/bonds'
 import FMonthCalendar from '@/components/FMonthCalendar.vue'
 import { supabase } from '@/lib/supabase'
 import { computed, ref, watch } from 'vue'
 
 type BondRow = {
   id: string
-  name: string
-  currency: string
+  bond_type: BondType
   purchase_date: string
-  term_months: number
   maturity_date: string
-  opening_value: number | string
-  current_value: number | string
-  interest_rate_pct: number | string
+  quantity: number
+  nominal_per_bond: number | string
+  interest_rate: number | string
 }
 
 type EditableBondRow = {
   localId: string
   id: string | null
-  name: string
-  currency: string
+  bondType: BondType
   purchaseDate: string
-  termMonths: number
   maturityDate: string
-  openingValue: number
-  currentValue: number
-  interestRatePct: number
+  quantity: number
+  nominalPerBond: number
+  interestRate: number
+  calc: BondCalculation
   error: string
   isSaving: boolean
   persistedSignature: string
@@ -216,18 +197,64 @@ const getMonthBounds = (periodMonth: string) => {
   return { monthStart, monthEnd }
 }
 
+const toPosition = (row: Pick<EditableBondRow, 'id' | 'bondType' | 'purchaseDate' | 'maturityDate' | 'quantity' | 'nominalPerBond' | 'interestRate'>): BondPosition => ({
+  id: row.id ?? 'new',
+  bondType: row.bondType,
+  purchaseDate: row.purchaseDate,
+  maturityDate: row.maturityDate,
+  quantity: row.quantity,
+  nominalPerBond: row.nominalPerBond,
+  interestRate: row.interestRate,
+})
+
+const recalcRow = (row: EditableBondRow) => {
+  row.maturityDate = getBondMaturityDate(row.bondType, row.purchaseDate)
+  row.calc = calculateBondPosition(toPosition(row))
+}
+
 const getRowSignature = (row: EditableBondRow) =>
   JSON.stringify({
-    name: row.name.trim(),
-    currency: row.currency.toUpperCase(),
+    bondType: row.bondType,
     purchaseDate: row.purchaseDate,
-    termMonths: row.termMonths,
-    openingValue: Number.isFinite(row.openingValue) ? Number(row.openingValue.toFixed(2)) : row.openingValue,
-    currentValue: Number.isFinite(row.currentValue) ? Number(row.currentValue.toFixed(2)) : row.currentValue,
-    interestRatePct: Number.isFinite(row.interestRatePct)
-      ? Number(row.interestRatePct.toFixed(2))
-      : row.interestRatePct,
+    quantity: row.quantity,
+    nominalPerBond: Number.isFinite(row.nominalPerBond) ? Number(row.nominalPerBond.toFixed(2)) : row.nominalPerBond,
+    interestRate: Number.isFinite(row.interestRate) ? Number(row.interestRate.toFixed(6)) : row.interestRate,
   })
+
+const createEditableRow = (row: {
+  localId: string
+  id: string | null
+  bondType: BondType
+  purchaseDate: string
+  quantity: number
+  nominalPerBond: number
+  interestRate: number
+}) => {
+  const editableRow: EditableBondRow = {
+    localId: row.localId,
+    id: row.id,
+    bondType: row.bondType,
+    purchaseDate: row.purchaseDate,
+    maturityDate: getBondMaturityDate(row.bondType, row.purchaseDate),
+    quantity: row.quantity,
+    nominalPerBond: row.nominalPerBond,
+    interestRate: row.interestRate,
+    calc: {
+      purchaseValue: 0,
+      interest: 0,
+      finalValue: 0,
+      roi: 0,
+      status: 'OPEN',
+    },
+    error: '',
+    isSaving: false,
+    persistedSignature: '',
+  }
+
+  recalcRow(editableRow)
+  editableRow.persistedSignature = getRowSignature(editableRow)
+  return editableRow
+}
 
 const loadRows = async () => {
   loading.value = true
@@ -237,41 +264,32 @@ const loadRows = async () => {
     const { monthStart, monthEnd } = getMonthBounds(selectedPeriodMonth.value)
     const { data, error } = await supabase
       .from('bonds_positions')
-      .select(`
-        id,
-        name,
-        currency,
-        purchase_date,
-        term_months,
-        maturity_date,
-        opening_value,
-        current_value,
-        interest_rate_pct
-      `)
+      .select('id, bond_type, purchase_date, maturity_date, quantity, nominal_per_bond, interest_rate')
       .lte('purchase_date', monthEnd)
-      .or(`maturity_date.is.null,maturity_date.gte.${monthStart}`)
+      .gte('maturity_date', monthStart)
       .order('purchase_date', { ascending: false })
-      .order('name', { ascending: true })
 
     if (error) throw error
 
-    editableRows.value = ((data ?? []) as BondRow[]).map((row) => {
-      const editableRow: EditableBondRow = {
+    const selectedYm = selectedPeriodMonth.value.slice(0, 7)
+    const monthFilteredRows = ((data ?? []) as BondRow[]).filter((row) => {
+      const purchaseYm = row.purchase_date.slice(0, 7)
+      const maturityYm = row.maturity_date.slice(0, 7)
+      return purchaseYm <= selectedYm && maturityYm >= selectedYm
+    })
+
+    editableRows.value = monthFilteredRows.map((row) => {
+      const editableRow = createEditableRow({
         localId: row.id,
         id: row.id,
-        name: row.name,
-        currency: row.currency,
+        bondType: row.bond_type,
         purchaseDate: row.purchase_date,
-        termMonths: row.term_months,
-        maturityDate: row.maturity_date,
-        openingValue: Number(row.opening_value),
-        currentValue: Number(row.current_value),
-        interestRatePct: Number(row.interest_rate_pct),
-        error: '',
-        isSaving: false,
-        persistedSignature: '',
-      }
-
+        quantity: Number(row.quantity),
+        nominalPerBond: Number(row.nominal_per_bond),
+        interestRate: Number(row.interest_rate),
+      })
+      editableRow.maturityDate = row.maturity_date
+      recalcRow(editableRow)
       editableRow.persistedSignature = getRowSignature(editableRow)
       return editableRow
     })
@@ -282,60 +300,54 @@ const loadRows = async () => {
   }
 }
 
-watch(selectedPeriodMonth, () => {
-  void loadRows()
-}, { immediate: true })
+watch(
+  selectedPeriodMonth,
+  () => {
+    void loadRows()
+  },
+  { immediate: true },
+)
 
 const addRow = () => {
-  const editableRow: EditableBondRow = {
+  const newRow = createEditableRow({
     localId: `new-${Date.now()}-${Math.random()}`,
     id: null,
-    name: '',
-    currency: 'PLN',
+    bondType: 'OTS',
     purchaseDate: selectedPeriodMonth.value,
-    termMonths: 12,
-    maturityDate: '',
-    openingValue: 0,
-    currentValue: 0,
-    interestRatePct: 0,
-    error: '',
-    isSaving: false,
-    persistedSignature: '',
-  }
+    quantity: 1,
+    nominalPerBond: 100,
+    interestRate: 0,
+  })
 
-  editableRow.persistedSignature = getRowSignature(editableRow)
-  editableRows.value.unshift(editableRow)
+  editableRows.value.unshift(newRow)
 }
 
 const validateRow = (row: EditableBondRow) => {
-  if (row.name.trim().length < 1) return 'Name is required.'
-  if (!/^[A-Za-z]{3}$/.test(row.currency)) return 'Currency must be a 3-letter ISO code.'
+  if (!['OTS', 'TOS'].includes(row.bondType)) return 'Bond type must be OTS or TOS.'
   if (!row.purchaseDate) return 'Purchase date is required.'
-  if (!Number.isInteger(row.termMonths) || row.termMonths <= 0) return 'Term must be a positive integer (months).'
-  if (!Number.isFinite(row.openingValue) || row.openingValue < 0) return 'Opening value must be >= 0.'
-  if (!Number.isFinite(row.currentValue) || row.currentValue < 0) return 'Current value must be >= 0.'
-  if (!Number.isFinite(row.interestRatePct) || row.interestRatePct < 0) return 'Interest % must be >= 0.'
+  if (!Number.isInteger(row.quantity) || row.quantity <= 0) return 'Quantity must be a positive integer.'
+  if (!Number.isFinite(row.nominalPerBond) || row.nominalPerBond <= 0) return 'Nominal must be > 0.'
+  if (!Number.isFinite(row.interestRate) || row.interestRate < 0) return 'Rate must be >= 0.'
   return ''
 }
-
-const rowProfitLoss = (row: EditableBondRow) => row.currentValue - row.openingValue
 
 const saveRow = async (localId: string) => {
   const row = editableRows.value.find((item) => item.localId === localId)
   if (!row || row.isSaving) return
 
+  recalcRow(row)
   row.error = validateRow(row)
   if (row.error) return
+
   row.isSaving = true
 
   const payload = {
-    name: row.name.trim(),
-    currency: row.currency.toUpperCase(),
+    bond_type: row.bondType,
     purchase_date: row.purchaseDate,
-    term_months: row.termMonths,
-    opening_value: Number(row.openingValue.toFixed(2)),
-    current_value: Number(row.currentValue.toFixed(2)),
-    interest_rate_pct: Number(row.interestRatePct.toFixed(2)),
+    maturity_date: row.maturityDate,
+    quantity: row.quantity,
+    nominal_per_bond: Number(row.nominalPerBond.toFixed(2)),
+    interest_rate: Number(row.interestRate.toFixed(6)),
   }
 
   try {
@@ -357,18 +369,7 @@ const saveRow = async (localId: string) => {
       row.maturityDate = data.maturity_date
     }
 
-    row.currency = row.currency.toUpperCase()
-
-    if (row.id) {
-      const { data, error } = await supabase
-        .from('bonds_positions')
-        .select('maturity_date')
-        .eq('id', row.id)
-        .single()
-      if (error) throw error
-      row.maturityDate = data.maturity_date
-    }
-
+    recalcRow(row)
     row.persistedSignature = getRowSignature(row)
     row.error = ''
   } catch (error) {
@@ -381,17 +382,27 @@ const saveRow = async (localId: string) => {
 const onCommit = async (localId: string) => {
   const row = editableRows.value.find((item) => item.localId === localId)
   if (!row || row.isSaving) return
+
+  recalcRow(row)
   if (getRowSignature(row) === row.persistedSignature) return
   await saveRow(localId)
+}
+
+const onRowInput = (localId: string) => {
+  const row = editableRows.value.find((item) => item.localId === localId)
+  if (!row) return
+  recalcRow(row)
 }
 
 const deleteRow = async (localId: string) => {
   const rowIndex = editableRows.value.findIndex((item) => item.localId === localId)
   if (rowIndex < 0) return
+
   const row = editableRows.value[rowIndex]
   if (!row || row.isSaving) return
 
   row.isSaving = true
+
   try {
     if (row.id) {
       const { error } = await supabase
@@ -400,6 +411,7 @@ const deleteRow = async (localId: string) => {
         .eq('id', row.id)
       if (error) throw error
     }
+
     editableRows.value.splice(rowIndex, 1)
   } catch (error) {
     row.error = error instanceof Error ? error.message : 'Failed to delete row.'
@@ -408,15 +420,14 @@ const deleteRow = async (localId: string) => {
   }
 }
 
-const formatSignedCurrency = (value: number, currency: string) => {
-  const absFormatted = new Intl.NumberFormat('pl-PL', {
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('pl-PL', {
     style: 'currency',
-    currency: /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : 'PLN',
+    currency: 'PLN',
     maximumFractionDigits: 2,
-  }).format(Math.abs(value))
+  }).format(value)
 
-  return value >= 0 ? `+${absFormatted}` : `-${absFormatted}`
-}
+const formatPercent = (value: number) => `${(value * 100).toFixed(2)}%`
 </script>
 
 <style scoped></style>

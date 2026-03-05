@@ -42,6 +42,7 @@ import FProgressPanel from '@/components/FProgressPanel.vue'
 import FRoiPanel from '@/components/FRoiPanel.vue'
 import FStocksPanel from '@/components/FStocksPanel.vue'
 import FWalet from '@/components/FWalet.vue'
+import { calculateBondPosition, type BondPosition, type BondType } from '@/lib/bonds'
 import { supabase } from '@/lib/supabase'
 import { useSettingsStore } from '@/stores/settings'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -154,7 +155,7 @@ const loadWalletData = async () => {
     const monthEnd = `${currentPeriodMonth.slice(0, 7)}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
     const { data: bondsData, error: bondsError } = await supabase
       .from('bonds_positions')
-      .select('currency, current_value, purchase_date, maturity_date')
+      .select('id, bond_type, purchase_date, maturity_date, quantity, nominal_per_bond, interest_rate')
       .lte('purchase_date', monthEnd)
       .gte('maturity_date', currentPeriodMonth)
 
@@ -163,16 +164,26 @@ const loadWalletData = async () => {
     let bondsTotal = 0
     for (const row of (
       bondsData ?? []
-    ) as { currency: string; current_value: number | string; purchase_date: string; maturity_date: string }[]) {
-      const currency = row.currency?.toUpperCase()
-      if (!currency) continue
-      const rate = FX_TO_PLN[currency]
-      if (!rate) {
-        missing.add(currency)
-        continue
+    ) as {
+      id: string
+      bond_type: BondType
+      purchase_date: string
+      maturity_date: string
+      quantity: number
+      nominal_per_bond: number | string
+      interest_rate: number | string
+    }[]) {
+      const position: BondPosition = {
+        id: row.id,
+        bondType: row.bond_type,
+        purchaseDate: row.purchase_date,
+        maturityDate: row.maturity_date,
+        quantity: Number(row.quantity),
+        nominalPerBond: Number(row.nominal_per_bond),
+        interestRate: Number(row.interest_rate),
       }
 
-      bondsTotal += Number(row.current_value) * rate
+      bondsTotal += calculateBondPosition(position).finalValue
     }
     bondsPln.value = Number(bondsTotal.toFixed(2))
 

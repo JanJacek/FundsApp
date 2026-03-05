@@ -90,6 +90,7 @@
 </template>
 
 <script setup lang="ts">
+import { calculateBondPosition, type BondPosition, type BondType } from '@/lib/bonds'
 import { supabase } from '@/lib/supabase'
 import { useSettingsStore } from '@/stores/settings'
 import { computed, onMounted, ref } from 'vue'
@@ -107,10 +108,13 @@ type PriceRow = {
 }
 
 type BondRow = {
-  current_value: number | string
-  currency: string
+  id: string
+  bond_type: BondType
   purchase_date: string
   maturity_date: string
+  quantity: number
+  nominal_per_bond: number | string
+  interest_rate: number | string
 }
 
 const FX_TO_PLN: Record<string, number> = {
@@ -220,7 +224,7 @@ const loadProgress = async () => {
         .lte('opened_at', monthEnd),
       supabase
         .from('bonds_positions')
-        .select('current_value, currency, purchase_date, maturity_date')
+        .select('id, bond_type, purchase_date, maturity_date, quantity, nominal_per_bond, interest_rate')
         .lte('purchase_date', monthEnd),
     ])
 
@@ -265,10 +269,18 @@ const loadProgress = async () => {
       }
 
       for (const row of bondRows) {
-        const rate = FX_TO_PLN[row.currency.toUpperCase()]
-        if (!rate) continue
         if (row.purchase_date <= monthEndLocal && row.maturity_date >= monthStartLocal) {
-          dynamicTotal += Number(row.current_value) * rate
+          const position: BondPosition = {
+            id: row.id,
+            bondType: row.bond_type,
+            purchaseDate: row.purchase_date,
+            maturityDate: row.maturity_date,
+            quantity: Number(row.quantity),
+            nominalPerBond: Number(row.nominal_per_bond),
+            interestRate: Number(row.interest_rate),
+          }
+
+          dynamicTotal += calculateBondPosition(position).finalValue
         }
       }
 
