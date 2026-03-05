@@ -153,8 +153,8 @@ const editableRows = ref<EditableEtfRow[]>([])
 const etfsTableHeaders: FTableHeader[] = [
   { key: 'name', label: 'Name' },
   { key: 'quantity', label: 'Quantity', numeric: true, align: 'left' },
-  { key: 'currentPrice', label: 'Current Price', numeric: true, align: 'left' },
   { key: 'openPrice', label: 'Open Price', numeric: true, align: 'left' },
+  { key: 'currentPrice', label: 'Current Price', numeric: true, align: 'left' },
   { key: 'profitLoss', label: 'Profit/Loss', numeric: true },
   { key: 'openedAt', label: 'Open Date' },
   { key: 'closedAt', label: 'Close Date' },
