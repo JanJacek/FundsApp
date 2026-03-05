@@ -270,20 +270,13 @@ const loadRows = async () => {
     const { data, error } = await supabase
       .from('bonds_positions')
       .select('id, bond_type, purchase_date, maturity_date, quantity, nominal_per_bond, interest_rate')
+      .gte('purchase_date', monthStart)
       .lte('purchase_date', monthEnd)
-      .gte('maturity_date', monthStart)
       .order('purchase_date', { ascending: false })
 
     if (error) throw error
 
-    const selectedYm = selectedPeriodMonth.value.slice(0, 7)
-    const monthFilteredRows = ((data ?? []) as BondRow[]).filter((row) => {
-      const purchaseYm = row.purchase_date.slice(0, 7)
-      const maturityYm = row.maturity_date.slice(0, 7)
-      return purchaseYm <= selectedYm && maturityYm >= selectedYm
-    })
-
-    editableRows.value = monthFilteredRows.map((row) => {
+    editableRows.value = ((data ?? []) as BondRow[]).map((row) => {
       const editableRow = createEditableRow({
         localId: row.id,
         id: row.id,
