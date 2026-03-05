@@ -1,157 +1,166 @@
 <template>
   <main class="min-h-[calc(100vh-4rem)] bg-dashboard p-6">
-    <section class="mx-auto w-full max-w-[980px] space-y-8">
-      <div>
-        <h1 class="m-0 text-2xl font-bold text-text">Ustawienia</h1>
-      </div>
+    <section class="mx-auto flex h-[calc(100vh-4rem-3rem)] w-full max-w-[69rem] flex-col gap-6">
+      <h1 class="m-0 text-2xl font-bold text-text">Ustawienia</h1>
 
-      <div>
-        <h2 class="m-0 text-lg font-bold text-text">Waluta prezentacji</h2>
-        <p class="mt-2 text-sm text-muted">Waluta prezentacji wszystkich wartości w aplikacji.</p>
+      <div class="min-h-0 flex-1 grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
+        <aside class="h-full rounded-[12px] border border-border bg-surface p-2">
+          <nav class="space-y-1">
+            <button
+              v-for="section in sections"
+              :key="section.id"
+              type="button"
+              class="flex w-full items-center rounded-[8px] px-3 py-2 text-left text-sm text-text hover:bg-primary/5"
+              :class="activeSection === section.id ? 'bg-primary text-white hover:bg-primary' : ''"
+              @click="activeSection = section.id"
+            >
+              {{ section.label }}
+            </button>
+          </nav>
+        </aside>
 
-        <div class="mt-4 flex items-center gap-3">
-          <span class="text-sm text-text">Waluta:</span>
-          <FSelect
-            :model-value="settings.displayCurrency"
-            :options="currencyOptions"
-            @update:model-value="settings.setDisplayCurrency"
-          />
-        </div>
-      </div>
+        <section class="h-full rounded-[12px] border border-border bg-surface p-5">
+          <FMessage v-if="saveError" variant="error">{{ saveError }}</FMessage>
+          <FMessage v-if="saveSuccess" variant="success">{{ saveSuccess }}</FMessage>
 
-      <div>
-        <h2 class="m-0 text-lg font-bold text-text">Avatar</h2>
-        <p class="mt-2 text-sm text-muted">Wpisz swoje inicjały (maksymalnie 2 litery).</p>
+          <div v-if="activeSection === 'presentation'" class="space-y-4">
+            <h2 class="m-0 text-lg font-bold text-text">Waluta prezentacji</h2>
+            <p class="m-0 text-sm text-muted">Waluta prezentacji wszystkich wartości w aplikacji.</p>
 
-        <div class="mt-4 flex flex-wrap items-end gap-3">
-          <label class="grid gap-1 text-sm text-text">
-            Inicjały
-            <input
-              v-model="avatarForm"
-              type="text"
-              maxlength="2"
-              class="w-24 rounded-[10px] border border-border bg-surface px-3 py-2 text-sm uppercase text-text outline-none"
-            />
-          </label>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-text">Waluta:</span>
+              <FSelect
+                :model-value="settings.displayCurrency"
+                :options="currencyOptions"
+                @update:model-value="settings.setDisplayCurrency"
+              />
+            </div>
+          </div>
 
-          <FButton
-            type="button"
-            :disabled="avatarSaving"
-            @click="saveAvatar"
-          >
-            {{ avatarSaving ? 'Zapisywanie...' : 'Zapisz inicjały' }}
-          </FButton>
-        </div>
-      </div>
+          <div v-else-if="activeSection === 'avatar'" class="space-y-4">
+            <h2 class="m-0 text-lg font-bold text-text">Avatar</h2>
+            <p class="m-0 text-sm text-muted">Wpisz swoje inicjały (maksymalnie 2 litery).</p>
 
-      <div>
-        <h2 class="m-0 text-lg font-bold text-text">Powiadomienia miesięczne</h2>
-        <p class="mt-2 text-sm text-muted">
-          Możesz zrezygnować z automatycznych powiadomień tworzonych raz w miesiącu.
-        </p>
+            <div class="flex flex-wrap items-end gap-3">
+              <label class="grid gap-1 text-sm text-text">
+                Inicjały
+                <input
+                  v-model="avatarForm"
+                  type="text"
+                  maxlength="2"
+                  class="w-24 rounded-[10px] border border-border bg-surface px-3 py-2 text-sm uppercase text-text outline-none"
+                />
+              </label>
 
-        <div class="mt-4 flex flex-wrap items-end gap-3">
-          <label class="flex items-center gap-2 text-sm text-text">
-            <input
-              v-model="notificationsForm"
-              type="checkbox"
-              class="h-4 w-4 rounded border-border"
-            />
-            Otrzymuj miesięczne powiadomienia in-app
-          </label>
+              <FButton type="button" :disabled="avatarSaving" @click="saveAvatar">
+                {{ avatarSaving ? 'Zapisywanie...' : 'Zapisz inicjały' }}
+              </FButton>
+            </div>
+          </div>
 
-          <FButton
-            type="button"
-            :disabled="notificationsSaving"
-            @click="saveNotifications"
-          >
-            {{ notificationsSaving ? 'Zapisywanie...' : 'Zapisz powiadomienia' }}
-          </FButton>
-        </div>
-      </div>
+          <div v-else-if="activeSection === 'notifications'" class="space-y-4">
+            <h2 class="m-0 text-lg font-bold text-text">Powiadomienia miesięczne</h2>
+            <p class="m-0 text-sm text-muted">
+              Możesz zrezygnować z automatycznych powiadomień tworzonych raz w miesiącu.
+            </p>
 
-      <div>
-        <h2 class="m-0 text-lg font-bold text-text">Struktura portfela</h2>
-        <p class="mt-2 text-sm text-muted">
-          Domyślnie: gotówka 4.6%, akcje 10%, ETF-y 67.4%, obligacje 18% (razem 100%).
-        </p>
+            <div class="flex flex-wrap items-end gap-3">
+              <label class="flex items-center gap-2 text-sm text-text">
+                <input
+                  v-model="notificationsForm"
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-border"
+                />
+                Otrzymuj miesięczne powiadomienia in-app
+              </label>
 
-        <div class="mt-4 grid gap-3 sm:grid-cols-2">
-          <label class="grid gap-1 text-sm text-text">
-            Gotówka (%)
-            <input
-              v-model.number="portfolioForm.cashPct"
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              class="rounded-[10px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none"
-            />
-          </label>
+              <FButton type="button" :disabled="notificationsSaving" @click="saveNotifications">
+                {{ notificationsSaving ? 'Zapisywanie...' : 'Zapisz powiadomienia' }}
+              </FButton>
+            </div>
+          </div>
 
-          <label class="grid gap-1 text-sm text-text">
-            Akcje (%)
-            <input
-              v-model.number="portfolioForm.stocksPct"
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              class="rounded-[10px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none"
-            />
-          </label>
+          <div v-else class="space-y-4">
+            <h2 class="m-0 text-lg font-bold text-text">Struktura portfela</h2>
+            <p class="m-0 text-sm text-muted">
+              Domyślnie: gotówka 4.6%, akcje 10%, ETF-y 67.4%, obligacje 18% (razem 100%).
+            </p>
 
-          <label class="grid gap-1 text-sm text-text">
-            ETF-y (%)
-            <input
-              v-model.number="portfolioForm.etfsPct"
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              class="rounded-[10px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none"
-            />
-          </label>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="grid gap-1 text-sm text-text">
+                Gotówka (%)
+                <input
+                  v-model.number="portfolioForm.cashPct"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  class="rounded-[10px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none"
+                />
+              </label>
 
-          <label class="grid gap-1 text-sm text-text">
-            Obligacje (%)
-            <input
-              v-model.number="portfolioForm.bondsPct"
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              class="rounded-[10px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none"
-            />
-          </label>
-        </div>
+              <label class="grid gap-1 text-sm text-text">
+                Akcje (%)
+                <input
+                  v-model.number="portfolioForm.stocksPct"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  class="rounded-[10px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none"
+                />
+              </label>
 
-        <p class="mt-3 text-sm" :class="isTotalValid ? 'text-muted' : 'text-error'">
-          Suma: {{ totalPct.toFixed(2) }}%
-        </p>
+              <label class="grid gap-1 text-sm text-text">
+                ETF-y (%)
+                <input
+                  v-model.number="portfolioForm.etfsPct"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  class="rounded-[10px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none"
+                />
+              </label>
 
-        <FMessage v-if="saveError" variant="error">{{ saveError }}</FMessage>
-        <FMessage v-if="saveSuccess" variant="success">{{ saveSuccess }}</FMessage>
+              <label class="grid gap-1 text-sm text-text">
+                Obligacje (%)
+                <input
+                  v-model.number="portfolioForm.bondsPct"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  class="rounded-[10px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none"
+                />
+              </label>
+            </div>
 
-        <div class="mt-4 flex flex-wrap gap-3">
-          <FButton
-            type="button"
-            :disabled="saving || !isTotalValid"
-            @click="savePortfolio"
-          >
-            {{ saving ? 'Zapisywanie...' : 'Zapisz strukturę' }}
-          </FButton>
+            <p class="text-sm" :class="isTotalValid ? 'text-muted' : 'text-error'">
+              Suma: {{ totalPct.toFixed(2) }}%
+            </p>
 
-          <FButton
-            type="button"
-            variant="ghost"
-            bordered
-            :disabled="saving"
-            @click="restoreDefaults"
-          >
-            Przywróć domyślne
-          </FButton>
-        </div>
+            <div class="flex flex-wrap gap-3">
+              <FButton
+                type="button"
+                :disabled="saving || !isTotalValid"
+                @click="savePortfolio"
+              >
+                {{ saving ? 'Zapisywanie...' : 'Zapisz strukturę' }}
+              </FButton>
+
+              <FButton
+                type="button"
+                variant="ghost"
+                bordered
+                :disabled="saving"
+                @click="restoreDefaults"
+              >
+                Przywróć domyślne
+              </FButton>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
   </main>
@@ -175,6 +184,13 @@ const avatarSaving = ref(false)
 const avatarForm = ref('')
 const notificationsSaving = ref(false)
 const notificationsForm = ref(true)
+const activeSection = ref<'presentation' | 'avatar' | 'notifications' | 'portfolio'>('presentation')
+const sections = [
+  { id: 'presentation', label: 'Waluta' },
+  { id: 'avatar', label: 'Avatar' },
+  { id: 'notifications', label: 'Powiadomienia' },
+  { id: 'portfolio', label: 'Portfel' },
+] as const
 
 const currencyOptions = computed(() =>
   settings.availableCurrencies.map((currency) => ({ label: currency, value: currency })),
