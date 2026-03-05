@@ -3,6 +3,7 @@ import DashboardView from '@/views/DashboardView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import SettingsView from '@/views/SettingsView.vue'
+import TermsView from '@/views/TermsView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -31,6 +32,11 @@ const router = createRouter({
       name: 'settings',
       component: SettingsView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/terms',
+      name: 'terms',
+      component: TermsView,
     },
     {
       path: '/cash',

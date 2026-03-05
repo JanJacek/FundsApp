@@ -51,6 +51,10 @@
         Rejestrując konto, robisz to wyłącznie na własną odpowiedzialność. Nie podawaj prawdziwych
         danych wrażliwych ani produkcyjnych.
       </p>
+      <p class="mt-3">
+        Zapoznaj się z
+        <router-link to="/terms" class="text-primary hover:underline">regulaminem</router-link>.
+      </p>
     </FPopup>
   </main>
 </template>

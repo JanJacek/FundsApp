@@ -1,11 +1,15 @@
 <template>
-  <div class="min-h-screen">
+  <div class="flex min-h-screen flex-col">
     <FTopNav v-if="auth.initialized && auth.isAuthenticated" />
-    <RouterView />
+    <div class="flex-1">
+      <RouterView />
+    </div>
+    <FFooter />
   </div>
 </template>
 
 <script setup lang="ts">
+import FFooter from '@/components/FFooter.vue'
 import FTopNav from '@/components/FTopNav.vue'
 import { useAuthStore } from '@/stores/auth'
 import { RouterView } from 'vue-router'
