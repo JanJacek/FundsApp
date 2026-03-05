@@ -21,12 +21,26 @@
           </article>
           <article class="rounded-[10px] border border-border bg-background p-3">
             <p class="m-0 text-xs uppercase tracking-wide text-muted">Total ROI</p>
-            <p class="m-0 text-xl font-bold" :class="roiClass(totalRoiValueDisplay)">
-              {{ formatSignedCurrency(totalRoiValueDisplay) }}
-            </p>
-            <p class="m-0 text-sm" :class="roiClass(totalRoiValueDisplay)">
-              {{ formatPercent(totalRoiPct) }}
-            </p>
+            <div class="mt-2 grid gap-3 sm:grid-cols-2">
+              <div>
+                <p class="m-0 text-sm text-muted">Gross</p>
+                <p class="m-0 text-lg font-bold" :class="roiClass(totalRoiGrossValueDisplay)">
+                  {{ formatSignedCurrency(totalRoiGrossValueDisplay) }}
+                </p>
+                <p class="m-0 text-xs" :class="roiClass(totalRoiGrossValueDisplay)">
+                  {{ formatPercent(totalRoiGrossPct) }}
+                </p>
+              </div>
+              <div>
+                <p class="m-0 text-sm text-muted">Net (Belka 19%)</p>
+                <p class="m-0 text-lg font-bold" :class="roiClass(totalRoiNetValueDisplay)">
+                  {{ formatSignedCurrency(totalRoiNetValueDisplay) }}
+                </p>
+                <p class="m-0 text-xs" :class="roiClass(totalRoiNetValueDisplay)">
+                  {{ formatPercent(totalRoiNetPct) }}
+                </p>
+              </div>
+            </div>
           </article>
         </div>
 
@@ -37,8 +51,10 @@
                 <th class="px-3 py-2 font-semibold">Asset Class</th>
                 <th class="px-3 py-2 font-semibold">Invested</th>
                 <th class="px-3 py-2 font-semibold">Current</th>
-                <th class="px-3 py-2 font-semibold">ROI Value</th>
-                <th class="px-3 py-2 font-semibold">ROI %</th>
+                <th class="px-3 py-2 font-semibold">ROI Gross</th>
+                <th class="px-3 py-2 font-semibold">ROI Gross %</th>
+                <th class="px-3 py-2 font-semibold">ROI Net</th>
+                <th class="px-3 py-2 font-semibold">ROI Net %</th>
               </tr>
             </thead>
             <tbody>
@@ -46,11 +62,17 @@
                 <td class="px-3 py-2 text-text">{{ row.label }}</td>
                 <td class="px-3 py-2 text-text">{{ formatCurrency(row.openDisplay) }}</td>
                 <td class="px-3 py-2 text-text">{{ formatCurrency(row.currentDisplay) }}</td>
-                <td class="px-3 py-2 font-semibold" :class="roiClass(row.roiValueDisplay)">
-                  {{ formatSignedCurrency(row.roiValueDisplay) }}
+                <td class="px-3 py-2 font-semibold" :class="roiClass(row.roiGrossValueDisplay)">
+                  {{ formatSignedCurrency(row.roiGrossValueDisplay) }}
                 </td>
-                <td class="px-3 py-2 font-semibold" :class="roiClass(row.roiValueDisplay)">
-                  {{ formatPercent(row.roiPct) }}
+                <td class="px-3 py-2 font-semibold" :class="roiClass(row.roiGrossValueDisplay)">
+                  {{ formatPercent(row.roiGrossPct) }}
+                </td>
+                <td class="px-3 py-2 font-semibold" :class="roiClass(row.roiNetValueDisplay)">
+                  {{ formatSignedCurrency(row.roiNetValueDisplay) }}
+                </td>
+                <td class="px-3 py-2 font-semibold" :class="roiClass(row.roiNetValueDisplay)">
+                  {{ formatPercent(row.roiNetPct) }}
                 </td>
               </tr>
             </tbody>
@@ -89,6 +111,7 @@ const FX_TO_PLN: Record<string, number> = {
   USD: 4.0,
   GBP: 5.0,
 }
+const BELKA_TAX_RATE = 0.19
 
 const settings = useSettingsStore()
 const loading = ref(false)
@@ -109,16 +132,26 @@ const convertFromPln = (valuePln: number) => {
 
 const totalOpenDisplay = computed(() => convertFromPln(stocksOpenPln.value + etfsOpenPln.value + bondsOpenPln.value))
 const totalCurrentDisplay = computed(() => convertFromPln(stocksCurrentPln.value + etfsCurrentPln.value + bondsCurrentPln.value))
-const totalRoiValueDisplay = computed(() => Number((totalCurrentDisplay.value - totalOpenDisplay.value).toFixed(2)))
-const totalRoiPct = computed(() => (totalOpenDisplay.value > 0 ? (totalRoiValueDisplay.value / totalOpenDisplay.value) * 100 : 0))
+const totalRoiGrossValueDisplay = computed(() => Number((totalCurrentDisplay.value - totalOpenDisplay.value).toFixed(2)))
+const totalBelkaTaxDisplay = computed(() => Number((Math.max(totalRoiGrossValueDisplay.value, 0) * BELKA_TAX_RATE).toFixed(2)))
+const totalRoiNetValueDisplay = computed(() => Number((totalRoiGrossValueDisplay.value - totalBelkaTaxDisplay.value).toFixed(2)))
+const totalRoiGrossPct = computed(() =>
+  totalOpenDisplay.value > 0 ? (totalRoiGrossValueDisplay.value / totalOpenDisplay.value) * 100 : 0,
+)
+const totalRoiNetPct = computed(() =>
+  totalOpenDisplay.value > 0 ? (totalRoiNetValueDisplay.value / totalOpenDisplay.value) * 100 : 0,
+)
 
 const rows = computed(() => {
   const mapRow = (key: string, label: string, openPln: number, currentPln: number) => {
     const openDisplay = convertFromPln(openPln)
     const currentDisplay = convertFromPln(currentPln)
-    const roiValueDisplay = Number((currentDisplay - openDisplay).toFixed(2))
-    const roiPct = openDisplay > 0 ? (roiValueDisplay / openDisplay) * 100 : 0
-    return { key, label, openDisplay, currentDisplay, roiValueDisplay, roiPct }
+    const roiGrossValueDisplay = Number((currentDisplay - openDisplay).toFixed(2))
+    const belkaTaxDisplay = Number((Math.max(roiGrossValueDisplay, 0) * BELKA_TAX_RATE).toFixed(2))
+    const roiNetValueDisplay = Number((roiGrossValueDisplay - belkaTaxDisplay).toFixed(2))
+    const roiGrossPct = openDisplay > 0 ? (roiGrossValueDisplay / openDisplay) * 100 : 0
+    const roiNetPct = openDisplay > 0 ? (roiNetValueDisplay / openDisplay) * 100 : 0
+    return { key, label, openDisplay, currentDisplay, roiGrossValueDisplay, roiNetValueDisplay, roiGrossPct, roiNetPct }
   }
 
   return [
