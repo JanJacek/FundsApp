@@ -1,6 +1,6 @@
 <template>
   <section class="mx-auto w-full max-w-[69rem] space-y-4">
-    <p class="m-0 text-sm text-muted">Pick a month to see all cash positions for that period.</p>
+    <p class="m-0 text-sm text-muted">Pick a month to manage cash positions.</p>
 
     <FMonthCalendar v-model="selectedPeriodMonth" />
 
@@ -32,26 +32,23 @@
               <tr class="border-b border-border text-left text-muted">
                 <th class="px-3 py-2 font-semibold">Currency</th>
                 <th class="px-3 py-2 font-semibold">Amount</th>
-                <th class="px-3 py-2 font-semibold">As of date</th>
-                <th class="px-3 py-2 font-semibold">Note</th>
+                <th class="px-3 py-2 font-semibold">Rate</th>
+                <th class="px-3 py-2 font-semibold">Value in PLN</th>
                 <th class="px-3 py-2 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="row in editableRows"
-                :key="row.localId"
-                class="border-b border-border/70"
-              >
+              <tr v-for="row in editableRows" :key="row.localId" class="border-b border-border/70">
                 <td class="px-3 py-2">
-                  <input
+                  <select
                     v-model="row.currency"
-                    type="text"
-                    maxlength="3"
                     class="w-20 rounded-[8px] border border-border px-2 py-1 uppercase text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
+                    @change="void onCommit(row.localId)"
+                  >
+                    <option v-for="currency in allowedCurrencies" :key="currency" :value="currency">
+                      {{ currency }}
+                    </option>
+                  </select>
                 </td>
                 <td class="px-3 py-2">
                   <input
@@ -64,26 +61,8 @@
                     @blur="void onCommit(row.localId)"
                   />
                 </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model="row.asOfDate"
-                    type="date"
-                    class="rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
-                <td class="px-3 py-2">
-                  <input
-                    v-model="row.note"
-                    type="text"
-                    maxlength="300"
-                    placeholder="Optional note"
-                    class="w-full min-w-[180px] rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-                    @keydown.enter.prevent="void onCommit(row.localId)"
-                    @blur="void onCommit(row.localId)"
-                  />
-                </td>
+                <td class="px-3 py-2 text-text">{{ formatRate(row.currency) }}</td>
+                <td class="px-3 py-2 text-text">{{ formatCurrency(valueInPln(row)) }}</td>
                 <td class="px-3 py-2">
                   <div class="flex items-center gap-2">
                     <button
@@ -103,8 +82,21 @@
                 </td>
               </tr>
             </tbody>
+            <tfoot>
+              <tr class="border-t border-border bg-background/50">
+                <td class="px-3 py-2 font-semibold text-text" colspan="3">
+                  Cash na ostatni dzień miesiąca
+                </td>
+                <td class="px-3 py-2 font-bold text-text">{{ formatCurrency(totalPln) }}</td>
+                <td class="px-3 py-2" />
+              </tr>
+            </tfoot>
           </table>
         </div>
+
+        <p v-if="missingRates.length" class="mt-2 text-xs text-error">
+          Missing rates up to cutoff date for: {{ missingRates.join(', ') }}.
+        </p>
       </template>
     </section>
   </section>
@@ -120,8 +112,6 @@ type CashRow = {
   id: string
   currency: string
   amount: string | number
-  as_of_date: string
-  note: string | null
 }
 
 type EditableCashRow = {
@@ -129,28 +119,32 @@ type EditableCashRow = {
   id: string | null
   currency: string
   amount: number
-  asOfDate: string
-  note: string
   error: string
   isSaving: boolean
   persistedSignature: string
 }
 
+type FxRateRow = {
+  currency: string
+  rate_to_pln: number | string
+  rate_date: string
+}
+
 const now = new Date()
 const initialMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+const allowedCurrencies = ['PLN', 'EUR', 'USD'] as const
 
 const selectedPeriodMonth = ref(initialMonth)
 const rows = ref<CashRow[]>([])
 const editableRows = ref<EditableCashRow[]>([])
 const loading = ref(false)
 const errorMsg = ref('')
+const fxRates = ref<Record<string, number>>({ PLN: 1 })
 
 const getRowSignature = (row: EditableCashRow) =>
   JSON.stringify({
-    currency: row.currency.toUpperCase(),
+    currency: row.currency,
     amount: Number.isFinite(row.amount) ? Number(row.amount.toFixed(2)) : row.amount,
-    asOfDate: row.asOfDate,
-    note: row.note || '',
   })
 
 const selectedMonthLabel = computed(() => {
@@ -161,6 +155,41 @@ const selectedMonthLabel = computed(() => {
   return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date)
 })
 
+const monthEndDate = computed(() => {
+  const [yearRaw, monthRaw] = selectedPeriodMonth.value.split('-')
+  const year = Number(yearRaw)
+  const month = Number(monthRaw)
+  const lastDay = new Date(year, month, 0).getDate()
+  return `${yearRaw}-${monthRaw}-${String(lastDay).padStart(2, '0')}`
+})
+
+const currentMonthStart = computed(() => {
+  const date = new Date()
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`
+})
+
+const todayDate = computed(() => new Date().toISOString().slice(0, 10))
+
+const rateCutoffDate = computed(() => {
+  if (selectedPeriodMonth.value === currentMonthStart.value) return todayDate.value
+  return monthEndDate.value
+})
+
+const valueInPln = (row: EditableCashRow) => {
+  const rate = fxRates.value[row.currency] ?? 0
+  return Number((row.amount * rate).toFixed(2))
+}
+
+const totalPln = computed(() =>
+  Number(editableRows.value.reduce((sum, row) => sum + valueInPln(row), 0).toFixed(2)),
+)
+
+const missingRates = computed(() =>
+  Array.from(new Set(editableRows.value.map((row) => row.currency))).filter(
+    (currency) => !fxRates.value[currency],
+  ),
+)
+
 const loadCashRows = async () => {
   loading.value = true
   errorMsg.value = ''
@@ -168,7 +197,7 @@ const loadCashRows = async () => {
   try {
     const { data, error } = await supabase
       .from('cash_balances')
-      .select('id, currency, amount, as_of_date, note')
+      .select('id, currency, amount')
       .eq('period_month', selectedPeriodMonth.value)
       .order('currency', { ascending: true })
 
@@ -180,8 +209,6 @@ const loadCashRows = async () => {
         id: row.id,
         currency: row.currency,
         amount: Number(row.amount),
-        asOfDate: row.as_of_date,
-        note: row.note ?? '',
         error: '',
         isSaving: false,
         persistedSignature: '',
@@ -197,24 +224,89 @@ const loadCashRows = async () => {
   }
 }
 
-watch(selectedPeriodMonth, () => {
-  void loadCashRows()
-}, { immediate: true })
+const loadFxRates = async () => {
+  const currencies = allowedCurrencies.filter((currency) => currency !== 'PLN')
+  const { data, error } = await supabase
+    .from('fx_rates')
+    .select('currency, rate_to_pln, rate_date')
+    .in('currency', currencies)
+    .lte('rate_date', rateCutoffDate.value)
+    .order('currency', { ascending: true })
+    .order('rate_date', { ascending: false })
+
+  if (error) {
+    fxRates.value = { PLN: 1 }
+    return
+  }
+
+  const map: Record<string, number> = { PLN: 1 }
+  for (const row of (data ?? []) as FxRateRow[]) {
+    const currency = row.currency.toUpperCase()
+    if (map[currency]) continue
+    map[currency] = Number(row.rate_to_pln)
+  }
+
+  const missingFromDb = currencies.filter((currency) => !map[currency])
+  if (missingFromDb.length > 0) {
+    const fetchedRates = await Promise.all(
+      missingFromDb.map(async (currency) => {
+        const rate = await fetchNbpRate(currency, rateCutoffDate.value)
+        return { currency, rate }
+      }),
+    )
+
+    for (const item of fetchedRates) {
+      if (!item.rate) continue
+      map[item.currency] = item.rate
+    }
+  }
+
+  fxRates.value = map
+}
+
+const formatDate = (date: Date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const fetchNbpRate = async (currency: string, cutoff: string) => {
+  try {
+    const cutoffDate = new Date(`${cutoff}T00:00:00`)
+    const startDate = new Date(cutoffDate)
+    startDate.setDate(startDate.getDate() - 7)
+
+    const url =
+      `https://api.nbp.pl/api/exchangerates/rates/A/${currency}/` +
+      `${formatDate(startDate)}/${formatDate(cutoffDate)}/?format=json`
+
+    const response = await fetch(url)
+    if (!response.ok) return null
+
+    const json = (await response.json()) as { rates?: Array<{ mid?: number }> }
+    const lastRate = json.rates?.[json.rates.length - 1]?.mid
+    if (typeof lastRate !== 'number') return null
+    return Number(lastRate)
+  } catch {
+    return null
+  }
+}
+
+watch(
+  selectedPeriodMonth,
+  () => {
+    void Promise.all([loadCashRows(), loadFxRates()])
+  },
+  { immediate: true },
+)
 
 const addRow = () => {
-  const [yearRaw, monthRaw] = selectedPeriodMonth.value.split('-')
-  const year = Number(yearRaw)
-  const month = Number(monthRaw)
-  const lastDay = new Date(year, month, 0).getDate()
-  const asOfDate = `${yearRaw}-${monthRaw}-${String(lastDay).padStart(2, '0')}`
-
   const editableRow: EditableCashRow = {
     localId: `new-${Date.now()}-${Math.random()}`,
     id: null,
     currency: 'PLN',
     amount: 0,
-    asOfDate,
-    note: '',
     error: '',
     isSaving: false,
     persistedSignature: '',
@@ -224,23 +316,13 @@ const addRow = () => {
   editableRows.value.unshift(editableRow)
 }
 
-const isSameMonth = (dateValue: string, periodMonth: string) =>
-  dateValue.slice(0, 7) === periodMonth.slice(0, 7)
-
 const validateRow = (row: EditableCashRow) => {
-  if (!/^[A-Za-z]{3}$/.test(row.currency)) {
-    return 'Currency must be a 3-letter ISO code.'
+  if (!allowedCurrencies.includes(row.currency as (typeof allowedCurrencies)[number])) {
+    return 'Currency must be one of: PLN, EUR, USD.'
   }
   if (!Number.isFinite(row.amount) || row.amount < 0) {
     return 'Amount must be a non-negative number.'
   }
-  if (!row.asOfDate) {
-    return 'As of date is required.'
-  }
-  if (!isSameMonth(row.asOfDate, selectedPeriodMonth.value)) {
-    return 'As of date must be in selected month.'
-  }
-
   return ''
 }
 
@@ -255,18 +337,13 @@ const saveRow = async (localId: string) => {
 
   const payload = {
     period_month: selectedPeriodMonth.value,
-    currency: row.currency.toUpperCase(),
+    currency: row.currency,
     amount: Number(row.amount.toFixed(2)),
-    as_of_date: row.asOfDate,
-    note: row.note || null,
   }
 
   try {
     if (row.id) {
-      const { error } = await supabase
-        .from('cash_balances')
-        .update(payload)
-        .eq('id', row.id)
+      const { error } = await supabase.from('cash_balances').update(payload).eq('id', row.id)
       if (error) throw error
     } else {
       const { data, error } = await supabase
@@ -280,7 +357,6 @@ const saveRow = async (localId: string) => {
       row.localId = data.id
     }
 
-    row.currency = row.currency.toUpperCase()
     row.persistedSignature = getRowSignature(row)
     row.error = ''
   } catch (error) {
@@ -307,10 +383,7 @@ const deleteRow = async (localId: string) => {
 
   try {
     if (row.id) {
-      const { error } = await supabase
-        .from('cash_balances')
-        .delete()
-        .eq('id', row.id)
+      const { error } = await supabase.from('cash_balances').delete().eq('id', row.id)
       if (error) throw error
     }
 
@@ -318,6 +391,20 @@ const deleteRow = async (localId: string) => {
   } catch (error) {
     row.error = error instanceof Error ? error.message : 'Failed to delete row.'
   }
+}
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('pl-PL', {
+    style: 'currency',
+    currency: 'PLN',
+    maximumFractionDigits: 2,
+  }).format(value)
+
+const formatRate = (currency: string) => {
+  if (currency === 'PLN') return '1.000000'
+  const rate = fxRates.value[currency]
+  if (!rate) return 'n/a'
+  return rate.toFixed(6)
 }
 </script>
 
