@@ -26,6 +26,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const displayCurrency = ref<DisplayCurrency>('PLN')
   const portfolioAllocation = ref<PortfolioAllocation>({ ...DEFAULT_PORTFOLIO_ALLOCATION })
   const avatarInitials = ref('')
+  const monthlyNotificationsEnabled = ref(true)
 
   const load = () => {
     if (typeof window === 'undefined') return
@@ -167,6 +168,43 @@ export const useSettingsStore = defineStore('settings', () => {
     avatarInitials.value = initials
   }
 
+  const loadMonthlyNotifications = async () => {
+    const ownerId = auth.user?.id
+    if (!ownerId) {
+      monthlyNotificationsEnabled.value = true
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('monthly_notifications_enabled')
+      .eq('owner_id', ownerId)
+      .maybeSingle()
+
+    if (error) throw error
+
+    monthlyNotificationsEnabled.value = data?.monthly_notifications_enabled ?? true
+  }
+
+  const saveMonthlyNotifications = async (enabled: boolean) => {
+    const ownerId = auth.user?.id
+    if (!ownerId) throw new Error('Brak zalogowanego użytkownika.')
+
+    const { error } = await supabase
+      .from('user_profiles')
+      .upsert(
+        {
+          owner_id: ownerId,
+          monthly_notifications_enabled: enabled,
+        },
+        { onConflict: 'owner_id' },
+      )
+
+    if (error) throw error
+
+    monthlyNotificationsEnabled.value = enabled
+  }
+
   load()
 
   return {
@@ -174,6 +212,7 @@ export const useSettingsStore = defineStore('settings', () => {
     availableCurrencies: AVAILABLE_CURRENCIES,
     portfolioAllocation,
     avatarInitials,
+    monthlyNotificationsEnabled,
     setDisplayCurrency,
     loadPortfolioAllocation,
     savePortfolioAllocation,
@@ -182,5 +221,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setAvatarInitials,
     loadAvatarInitials,
     saveAvatarInitials,
+    loadMonthlyNotifications,
+    saveMonthlyNotifications,
   }
 })

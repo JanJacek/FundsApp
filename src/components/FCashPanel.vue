@@ -32,7 +32,6 @@
               <tr class="border-b border-border text-left text-muted">
                 <th class="px-3 py-2 font-semibold">Currency</th>
                 <th class="px-3 py-2 font-semibold">Amount</th>
-                <th class="px-3 py-2 font-semibold">Rate</th>
                 <th class="px-3 py-2 font-semibold">Value in PLN</th>
                 <th class="px-3 py-2 font-semibold">Actions</th>
               </tr>
@@ -61,7 +60,6 @@
                     @blur="void onCommit(row.localId)"
                   />
                 </td>
-                <td class="px-3 py-2 text-text">{{ formatRate(row.currency) }}</td>
                 <td class="px-3 py-2 text-text">{{ formatCurrency(valueInPln(row)) }}</td>
                 <td class="px-3 py-2">
                   <div class="flex items-center gap-2">
@@ -84,7 +82,7 @@
             </tbody>
             <tfoot>
               <tr class="border-t border-border bg-background/50">
-                <td class="px-3 py-2 font-semibold text-text" colspan="3">
+                <td class="px-3 py-2 font-semibold text-text" colspan="2">
                   Cash na ostatni dzień miesiąca
                 </td>
                 <td class="px-3 py-2 font-bold text-text">{{ formatCurrency(totalPln) }}</td>
@@ -399,13 +397,6 @@ const formatCurrency = (value: number) =>
     currency: 'PLN',
     maximumFractionDigits: 2,
   }).format(value)
-
-const formatRate = (currency: string) => {
-  if (currency === 'PLN') return '1.000000'
-  const rate = fxRates.value[currency]
-  if (!rate) return 'n/a'
-  return rate.toFixed(6)
-}
 </script>
 
 <style scoped></style>

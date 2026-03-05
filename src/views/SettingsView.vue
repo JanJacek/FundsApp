@@ -45,6 +45,32 @@
       </div>
 
       <div>
+        <h2 class="m-0 text-lg font-bold text-text">Powiadomienia miesięczne</h2>
+        <p class="mt-2 text-sm text-muted">
+          Możesz zrezygnować z automatycznych powiadomień tworzonych raz w miesiącu.
+        </p>
+
+        <div class="mt-4 flex flex-wrap items-end gap-3">
+          <label class="flex items-center gap-2 text-sm text-text">
+            <input
+              v-model="notificationsForm"
+              type="checkbox"
+              class="h-4 w-4 rounded border-border"
+            />
+            Otrzymuj miesięczne powiadomienia in-app
+          </label>
+
+          <FButton
+            type="button"
+            :disabled="notificationsSaving"
+            @click="saveNotifications"
+          >
+            {{ notificationsSaving ? 'Zapisywanie...' : 'Zapisz powiadomienia' }}
+          </FButton>
+        </div>
+      </div>
+
+      <div>
         <h2 class="m-0 text-lg font-bold text-text">Struktura portfela</h2>
         <p class="mt-2 text-sm text-muted">
           Domyślnie: gotówka 4.6%, akcje 10%, ETF-y 67.4%, obligacje 18% (razem 100%).
@@ -147,6 +173,8 @@ const saveSuccess = ref('')
 const portfolioForm = ref<PortfolioAllocation>({ ...DEFAULT_PORTFOLIO_ALLOCATION })
 const avatarSaving = ref(false)
 const avatarForm = ref('')
+const notificationsSaving = ref(false)
+const notificationsForm = ref(true)
 
 const currencyOptions = computed(() =>
   settings.availableCurrencies.map((currency) => ({ label: currency, value: currency })),
@@ -164,9 +192,14 @@ const isTotalValid = computed(() => settings.isPortfolioAllocationValid(portfoli
 
 const loadSettings = async () => {
   saveError.value = ''
-  await Promise.all([settings.loadPortfolioAllocation(), settings.loadAvatarInitials()])
+  await Promise.all([
+    settings.loadPortfolioAllocation(),
+    settings.loadAvatarInitials(),
+    settings.loadMonthlyNotifications(),
+  ])
   portfolioForm.value = { ...settings.portfolioAllocation }
   avatarForm.value = settings.avatarInitials
+  notificationsForm.value = settings.monthlyNotificationsEnabled
 }
 
 const savePortfolio = async () => {
@@ -204,6 +237,24 @@ const saveAvatar = async () => {
     saveError.value = error instanceof Error ? error.message : 'Nie udało się zapisać inicjałów.'
   } finally {
     avatarSaving.value = false
+  }
+}
+
+const saveNotifications = async () => {
+  saveError.value = ''
+  saveSuccess.value = ''
+  notificationsSaving.value = true
+
+  try {
+    await settings.saveMonthlyNotifications(notificationsForm.value)
+    saveSuccess.value = notificationsForm.value
+      ? 'Powiadomienia miesięczne zostały włączone.'
+      : 'Powiadomienia miesięczne zostały wyłączone.'
+  } catch (error) {
+    saveError.value =
+      error instanceof Error ? error.message : 'Nie udało się zapisać ustawienia powiadomień.'
+  } finally {
+    notificationsSaving.value = false
   }
 }
 
