@@ -3,7 +3,7 @@
     <section class="rounded-[12px] border border-border bg-surface p-4">
       <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
         <h2 class="m-0 text-lg font-bold text-text">ROI - Return on Investment</h2>
-        <span class="text-sm text-muted">Active positions only</span>
+        <span class="text-sm text-muted">All investments (open + closed)</span>
       </div>
 
       <p v-if="loading" class="m-0 text-sm text-muted">Loading ROI...</p>
@@ -135,8 +135,6 @@ const loadRoiData = async () => {
   bondsCurrentPln.value = 0
 
   try {
-    const today = new Date().toISOString().slice(0, 10)
-
     const [stocksRes, etfsRes, bondsRes] = await Promise.all([
       supabase
         .from('stocks_positions')
@@ -154,21 +152,16 @@ const loadRoiData = async () => {
     if (bondsRes.error) throw bondsRes.error
 
     for (const row of (stocksRes.data ?? []) as PositionRow[]) {
-      const isClosed = !!row.closed_at && row.closed_at < today
-      if (isClosed) continue
       stocksOpenPln.value += Number(row.opening_price)
       stocksCurrentPln.value += Number(row.current_price)
     }
 
     for (const row of (etfsRes.data ?? []) as PositionRow[]) {
-      const isClosed = !!row.closed_at && row.closed_at < today
-      if (isClosed) continue
       etfsOpenPln.value += Number(row.opening_price)
       etfsCurrentPln.value += Number(row.current_price)
     }
 
     for (const row of (bondsRes.data ?? []) as BondRow[]) {
-      if (row.maturity_date < today) continue
       const rate = FX_TO_PLN[row.currency.toUpperCase()] || 1
       bondsOpenPln.value += Number(row.opening_value) * rate
       bondsCurrentPln.value += Number(row.current_value) * rate
