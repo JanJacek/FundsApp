@@ -9,7 +9,7 @@
       @click="toggleMenu"
     >
       <span class="hidden sm:inline">{{ auth.user?.email }}</span>
-      <FAvatar :text="auth.user?.email ?? ''" />
+      <FAvatar :text="avatarText" />
     </button>
 
     <div
@@ -56,13 +56,16 @@
 import { mdiCashMultiple, mdiCogOutline, mdiLogoutVariant } from '@mdi/js'
 import FAvatar from '@/components/FAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useSettingsStore } from '@/stores/settings'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const auth = useAuthStore()
+const settings = useSettingsStore()
 const isMenuOpen = ref(false)
 const menuRef = ref<HTMLElement | null>(null)
+const avatarText = computed(() => settings.avatarInitials || auth.user?.email || '')
 
 const closeMenu = () => {
   isMenuOpen.value = false
@@ -86,6 +89,7 @@ const logout = async () => {
 
 onMounted(() => {
   window.addEventListener('click', onWindowClick)
+  void settings.loadAvatarInitials()
 })
 
 onBeforeUnmount(() => {

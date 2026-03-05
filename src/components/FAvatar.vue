@@ -1,7 +1,7 @@
 <template>
   <span
     :class="[
-      'grid place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary',
+      'grid place-items-center rounded-full border border-border bg-primary/10 text-xs font-bold text-primary',
       sizeClass,
     ]"
   >
@@ -24,9 +24,13 @@ const props = withDefaults(
 )
 
 const initial = computed(() => {
-  const source = props.text.trim()
+  const source = props.text.trim().toUpperCase()
   if (!source) return 'U'
-  return source.charAt(0).toUpperCase()
+  const lettersOnly = source.replace(/[^A-Z]/g, '')
+  if (lettersOnly.length >= 2) return lettersOnly.slice(0, 2)
+  if (lettersOnly.length === 1) return lettersOnly
+  if (source.includes('@')) return source.charAt(0)
+  return 'U'
 })
 
 const sizeClass = computed(() => {

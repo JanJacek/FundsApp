@@ -20,6 +20,31 @@
       </div>
 
       <div>
+        <h2 class="m-0 text-lg font-bold text-text">Avatar</h2>
+        <p class="mt-2 text-sm text-muted">Wpisz swoje inicjały (maksymalnie 2 litery).</p>
+
+        <div class="mt-4 flex flex-wrap items-end gap-3">
+          <label class="grid gap-1 text-sm text-text">
+            Inicjały
+            <input
+              v-model="avatarForm"
+              type="text"
+              maxlength="2"
+              class="w-24 rounded-[10px] border border-border bg-surface px-3 py-2 text-sm uppercase text-text outline-none"
+            />
+          </label>
+
+          <FButton
+            type="button"
+            :disabled="avatarSaving"
+            @click="saveAvatar"
+          >
+            {{ avatarSaving ? 'Zapisywanie...' : 'Zapisz inicjały' }}
+          </FButton>
+        </div>
+      </div>
+
+      <div>
         <h2 class="m-0 text-lg font-bold text-text">Struktura portfela</h2>
         <p class="mt-2 text-sm text-muted">
           Domyślnie: gotówka 4.6%, akcje 10%, ETF-y 67.4%, obligacje 18% (razem 100%).
@@ -120,6 +145,8 @@ const saving = ref(false)
 const saveError = ref('')
 const saveSuccess = ref('')
 const portfolioForm = ref<PortfolioAllocation>({ ...DEFAULT_PORTFOLIO_ALLOCATION })
+const avatarSaving = ref(false)
+const avatarForm = ref('')
 
 const currencyOptions = computed(() =>
   settings.availableCurrencies.map((currency) => ({ label: currency, value: currency })),
@@ -137,8 +164,9 @@ const isTotalValid = computed(() => settings.isPortfolioAllocationValid(portfoli
 
 const loadSettings = async () => {
   saveError.value = ''
-  await settings.loadPortfolioAllocation()
+  await Promise.all([settings.loadPortfolioAllocation(), settings.loadAvatarInitials()])
   portfolioForm.value = { ...settings.portfolioAllocation }
+  avatarForm.value = settings.avatarInitials
 }
 
 const savePortfolio = async () => {
@@ -161,6 +189,22 @@ const restoreDefaults = () => {
   saveSuccess.value = ''
   settings.resetPortfolioAllocation()
   portfolioForm.value = { ...settings.portfolioAllocation }
+}
+
+const saveAvatar = async () => {
+  saveError.value = ''
+  saveSuccess.value = ''
+  avatarSaving.value = true
+
+  try {
+    await settings.saveAvatarInitials(avatarForm.value)
+    avatarForm.value = settings.avatarInitials
+    saveSuccess.value = 'Zapisano inicjały avatara.'
+  } catch (error) {
+    saveError.value = error instanceof Error ? error.message : 'Nie udało się zapisać inicjałów.'
+  } finally {
+    avatarSaving.value = false
+  }
 }
 
 onMounted(() => {

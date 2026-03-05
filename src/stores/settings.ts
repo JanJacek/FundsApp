@@ -25,6 +25,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const auth = useAuthStore()
   const displayCurrency = ref<DisplayCurrency>('PLN')
   const portfolioAllocation = ref<PortfolioAllocation>({ ...DEFAULT_PORTFOLIO_ALLOCATION })
+  const avatarInitials = ref('')
 
   const load = () => {
     if (typeof window === 'undefined') return
@@ -118,16 +119,68 @@ export const useSettingsStore = defineStore('settings', () => {
     setPortfolioAllocation(DEFAULT_PORTFOLIO_ALLOCATION)
   }
 
+  const normalizeAvatarInitials = (value: string) =>
+    value
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .slice(0, 2)
+
+  const setAvatarInitials = (value: string) => {
+    avatarInitials.value = normalizeAvatarInitials(value)
+  }
+
+  const loadAvatarInitials = async () => {
+    const ownerId = auth.user?.id
+    if (!ownerId) {
+      avatarInitials.value = ''
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('avatar_initials')
+      .eq('owner_id', ownerId)
+      .maybeSingle()
+
+    if (error) throw error
+
+    avatarInitials.value = normalizeAvatarInitials(data?.avatar_initials ?? '')
+  }
+
+  const saveAvatarInitials = async (value: string) => {
+    const ownerId = auth.user?.id
+    if (!ownerId) throw new Error('Brak zalogowanego użytkownika.')
+
+    const initials = normalizeAvatarInitials(value)
+    const { error } = await supabase
+      .from('user_profiles')
+      .upsert(
+        {
+          owner_id: ownerId,
+          avatar_initials: initials || null,
+        },
+        { onConflict: 'owner_id' },
+      )
+
+    if (error) throw error
+
+    avatarInitials.value = initials
+  }
+
   load()
 
   return {
     displayCurrency,
     availableCurrencies: AVAILABLE_CURRENCIES,
     portfolioAllocation,
+    avatarInitials,
     setDisplayCurrency,
     loadPortfolioAllocation,
     savePortfolioAllocation,
     resetPortfolioAllocation,
     isPortfolioAllocationValid,
+    setAvatarInitials,
+    loadAvatarInitials,
+    saveAvatarInitials,
   }
 })
