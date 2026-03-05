@@ -38,23 +38,23 @@
               @keydown.enter.prevent="void onCommit(row.localId)"
               @blur="void onCommit(row.localId)"
             />
+            <select
+              v-else-if="header.key === 'currency'"
+              v-model="row.currency"
+              class="w-20 rounded-[8px] border border-border px-2 py-1 uppercase text-text outline-none"
+              @change="void onCommit(row.localId)"
+            >
+              <option v-for="currency in allowedCurrencies" :key="currency" :value="currency">
+                {{ currency }}
+              </option>
+            </select>
             <input
               v-else-if="header.key === 'quantity'"
               v-model.number="row.quantity"
               type="number"
-              min="1"
+              min="0.0001"
               step="0.0001"
               class="w-20 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
-              @keydown.enter.prevent="void onCommit(row.localId)"
-              @blur="void onCommit(row.localId)"
-            />
-            <input
-              v-else-if="header.key === 'currentPrice'"
-              v-model.number="row.currentPrice"
-              type="number"
-              min="0"
-              step="0.01"
-              class="w-32 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
               @keydown.enter.prevent="void onCommit(row.localId)"
               @blur="void onCommit(row.localId)"
             />
@@ -68,12 +68,22 @@
               @keydown.enter.prevent="void onCommit(row.localId)"
               @blur="void onCommit(row.localId)"
             />
+            <input
+              v-else-if="header.key === 'currentPrice'"
+              v-model.number="row.currentPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              class="w-32 rounded-[8px] border border-border px-2 py-1 text-text outline-none"
+              @keydown.enter.prevent="void onCommit(row.localId)"
+              @blur="void onCommit(row.localId)"
+            />
             <span
               v-else-if="header.key === 'profitLoss'"
               class="font-semibold"
-              :class="rowProfitLoss(row) >= 0 ? 'text-success' : 'text-error'"
+              :class="rowProfitLossDisplay(row) >= 0 ? 'text-success' : 'text-error'"
             >
-              {{ formatSignedCurrency(rowProfitLoss(row)) }}
+              {{ formatSignedCurrency(rowProfitLossDisplay(row)) }}
             </span>
             <input
               v-else-if="header.key === 'openedAt'"
@@ -120,12 +130,15 @@ import { mdiDeleteOutline } from '@mdi/js'
 import FMonthCalendar from '@/components/FMonthCalendar.vue'
 import FTable from '@/components/FTable.vue'
 import type { FTableHeader } from '@/components/FTable.vue'
+import { fxRequestKey, resolveFxRatesToPln } from '@/lib/fx'
 import { supabase } from '@/lib/supabase'
+import { useSettingsStore } from '@/stores/settings'
 import { computed, ref, watch } from 'vue'
 
 type StockRow = {
   id: string
   name: string
+  currency: string
   quantity: number
   current_price: number | string
   opening_price: number | string
@@ -137,6 +150,7 @@ type EditableStockRow = {
   localId: string
   id: string | null
   name: string
+  currency: string
   quantity: number
   currentPrice: number
   openPrice: number
@@ -150,8 +164,13 @@ type EditableStockRow = {
 const loading = ref(false)
 const errorMsg = ref('')
 const editableRows = ref<EditableStockRow[]>([])
+const settings = useSettingsStore()
+const profitLossFxRates = ref<Record<string, number>>({})
+const displayCurrencyRateToPln = ref(1)
+const allowedCurrencies = ['PLN', 'EUR', 'USD'] as const
 const stocksTableHeaders: FTableHeader[] = [
   { key: 'name', label: 'Name' },
+  { key: 'currency', label: 'Currency' },
   { key: 'quantity', label: 'Quantity', numeric: true, align: 'left' },
   { key: 'openPrice', label: 'Open Price', numeric: true, align: 'left' },
   { key: 'currentPrice', label: 'Current Price', numeric: true, align: 'left' },
@@ -160,6 +179,7 @@ const stocksTableHeaders: FTableHeader[] = [
   { key: 'closedAt', label: 'Close Date' },
   { key: 'actions', label: 'Actions' },
 ]
+
 const now = new Date()
 const initialMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 const selectedPeriodMonth = ref(initialMonth)
@@ -184,12 +204,39 @@ const getMonthBounds = (periodMonth: string) => {
 const getRowSignature = (row: EditableStockRow) =>
   JSON.stringify({
     name: row.name.trim(),
+    currency: row.currency,
     quantity: row.quantity,
     currentPrice: Number.isFinite(row.currentPrice) ? Number(row.currentPrice.toFixed(2)) : row.currentPrice,
     openPrice: Number.isFinite(row.openPrice) ? Number(row.openPrice.toFixed(2)) : row.openPrice,
     openedAt: row.openedAt,
     closedAt: row.closedAt || '',
   })
+
+const getFxDateForRow = (row: EditableStockRow) => row.closedAt || new Date().toISOString().slice(0, 10)
+
+const rowProfitLossRaw = (row: EditableStockRow) => (row.currentPrice - row.openPrice) * row.quantity
+
+const rowProfitLossDisplay = (row: EditableStockRow) => {
+  const fromRate = profitLossFxRates.value[fxRequestKey(row.currency, getFxDateForRow(row))] ?? 0
+  const toRate = displayCurrencyRateToPln.value || 1
+  if (!fromRate) return 0
+  return Number(((rowProfitLossRaw(row) * fromRate) / toRate).toFixed(2))
+}
+
+const loadProfitLossFxRates = async () => {
+  const today = new Date().toISOString().slice(0, 10)
+  const requests = editableRows.value.map((row) => ({
+    currency: row.currency,
+    date: getFxDateForRow(row),
+  }))
+
+  requests.push({ currency: settings.displayCurrency, date: today })
+
+  const { rates } = await resolveFxRatesToPln(requests)
+  profitLossFxRates.value = rates
+  displayCurrencyRateToPln.value =
+    rates[fxRequestKey(settings.displayCurrency, today)] || (settings.displayCurrency === 'PLN' ? 1 : 1)
+}
 
 const loadRows = async () => {
   loading.value = true
@@ -199,7 +246,7 @@ const loadRows = async () => {
     const { monthStart, monthEnd } = getMonthBounds(selectedPeriodMonth.value)
     const { data, error } = await supabase
       .from('stocks_positions')
-      .select('id, name, quantity, current_price, opening_price, opened_at, closed_at')
+      .select('id, name, currency, quantity, current_price, opening_price, opened_at, closed_at')
       .lte('opened_at', monthEnd)
       .or(`closed_at.is.null,closed_at.gte.${monthStart}`)
       .order('opened_at', { ascending: false })
@@ -212,6 +259,7 @@ const loadRows = async () => {
         localId: row.id,
         id: row.id,
         name: row.name,
+        currency: row.currency,
         quantity: Number(row.quantity),
         currentPrice: Number(row.current_price),
         openPrice: Number(row.opening_price),
@@ -225,6 +273,8 @@ const loadRows = async () => {
       editableRow.persistedSignature = getRowSignature(editableRow)
       return editableRow
     })
+
+    await loadProfitLossFxRates()
   } catch (error) {
     errorMsg.value = error instanceof Error ? error.message : 'Failed to load stock rows.'
   } finally {
@@ -232,15 +282,27 @@ const loadRows = async () => {
   }
 }
 
-watch(selectedPeriodMonth, () => {
-  void loadRows()
-}, { immediate: true })
+watch(
+  selectedPeriodMonth,
+  () => {
+    void loadRows()
+  },
+  { immediate: true },
+)
+
+watch(
+  () => settings.displayCurrency,
+  () => {
+    void loadProfitLossFxRates()
+  },
+)
 
 const addRow = () => {
   const editableRow: EditableStockRow = {
     localId: `new-${Date.now()}-${Math.random()}`,
     id: null,
     name: '',
+    currency: 'PLN',
     quantity: 1,
     currentPrice: 0,
     openPrice: 0,
@@ -253,12 +315,14 @@ const addRow = () => {
 
   editableRow.persistedSignature = getRowSignature(editableRow)
   editableRows.value.unshift(editableRow)
+  void loadProfitLossFxRates()
 }
-
-const rowProfitLoss = (row: EditableStockRow) => (row.currentPrice - row.openPrice) * row.quantity
 
 const validateRow = (row: EditableStockRow) => {
   if (row.name.trim().length < 1) return 'Name is required.'
+  if (!allowedCurrencies.includes(row.currency as (typeof allowedCurrencies)[number])) {
+    return 'Currency must be one of: PLN, EUR, USD.'
+  }
   if (!Number.isFinite(row.quantity) || row.quantity <= 0) return 'Quantity must be > 0.'
   if (!Number.isFinite(row.currentPrice) || row.currentPrice < 0) return 'Current price must be >= 0.'
   if (!Number.isFinite(row.openPrice) || row.openPrice < 0) return 'Open price must be >= 0.'
@@ -277,6 +341,7 @@ const saveRow = async (localId: string) => {
 
   const payload = {
     name: row.name.trim(),
+    currency: row.currency.toUpperCase(),
     quantity: row.quantity,
     current_price: Number(row.currentPrice.toFixed(2)),
     opening_price: Number(row.openPrice.toFixed(2)),
@@ -286,17 +351,10 @@ const saveRow = async (localId: string) => {
 
   try {
     if (row.id) {
-      const { error } = await supabase
-        .from('stocks_positions')
-        .update(payload)
-        .eq('id', row.id)
+      const { error } = await supabase.from('stocks_positions').update(payload).eq('id', row.id)
       if (error) throw error
     } else {
-      const { data, error } = await supabase
-        .from('stocks_positions')
-        .insert(payload)
-        .select('id')
-        .single()
+      const { data, error } = await supabase.from('stocks_positions').insert(payload).select('id').single()
       if (error) throw error
       row.id = data.id
       row.localId = data.id
@@ -304,6 +362,7 @@ const saveRow = async (localId: string) => {
 
     row.persistedSignature = getRowSignature(row)
     row.error = ''
+    await loadProfitLossFxRates()
   } catch (error) {
     row.error = error instanceof Error ? error.message : 'Failed to save row.'
   } finally {
@@ -327,13 +386,12 @@ const deleteRow = async (localId: string) => {
   row.isSaving = true
   try {
     if (row.id) {
-      const { error } = await supabase
-        .from('stocks_positions')
-        .delete()
-        .eq('id', row.id)
+      const { error } = await supabase.from('stocks_positions').delete().eq('id', row.id)
       if (error) throw error
     }
+
     editableRows.value.splice(rowIndex, 1)
+    await loadProfitLossFxRates()
   } catch (error) {
     row.error = error instanceof Error ? error.message : 'Failed to delete row.'
   } finally {
@@ -344,7 +402,7 @@ const deleteRow = async (localId: string) => {
 const formatSignedCurrency = (value: number) => {
   const absFormatted = new Intl.NumberFormat('pl-PL', {
     style: 'currency',
-    currency: 'PLN',
+    currency: settings.displayCurrency,
     maximumFractionDigits: 2,
   }).format(Math.abs(value))
 

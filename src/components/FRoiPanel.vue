@@ -8,6 +8,7 @@
 
       <p v-if="loading" class="m-0 text-sm text-muted">Loading ROI...</p>
       <p v-else-if="errorMsg" class="m-0 text-sm text-error">{{ errorMsg }}</p>
+      <p v-else-if="fxWarning" class="m-0 text-sm text-error">{{ fxWarning }}</p>
 
       <template v-if="!loading && !errorMsg">
         <div class="grid gap-3 md:grid-cols-3">
@@ -94,11 +95,13 @@
 import FTable from '@/components/FTable.vue'
 import type { FTableHeader } from '@/components/FTable.vue'
 import { calculateBondPosition, type BondPosition, type BondType } from '@/lib/bonds'
+import { fxRequestKey, resolveFxRatesToPln } from '@/lib/fx'
 import { useSettingsStore } from '@/stores/settings'
 import { supabase } from '@/lib/supabase'
 import { computed, onMounted, ref } from 'vue'
 
 type PositionRow = {
+  currency: string
   quantity: number
   opening_price: number | string
   current_price: number | string
@@ -126,6 +129,7 @@ const BELKA_TAX_RATE = 0.19
 const settings = useSettingsStore()
 const loading = ref(false)
 const errorMsg = ref('')
+const fxWarning = ref('')
 const roiTableHeaders: FTableHeader[] = [
   { key: 'label', label: 'Asset Class' },
   { key: 'openDisplay', label: 'Invested', numeric: true },
@@ -183,6 +187,7 @@ const rows = computed(() => {
 const loadRoiData = async () => {
   loading.value = true
   errorMsg.value = ''
+  fxWarning.value = ''
   stocksOpenPln.value = 0
   stocksCurrentPln.value = 0
   etfsOpenPln.value = 0
@@ -194,10 +199,10 @@ const loadRoiData = async () => {
     const [stocksRes, etfsRes, bondsRes] = await Promise.all([
       supabase
         .from('stocks_positions')
-        .select('quantity, opening_price, current_price, closed_at'),
+        .select('currency, quantity, opening_price, current_price, closed_at'),
       supabase
         .from('etfs_positions')
-        .select('quantity, opening_price, current_price, closed_at'),
+        .select('currency, quantity, opening_price, current_price, closed_at'),
       supabase
         .from('bonds_positions')
         .select('id, bond_type, purchase_date, maturity_date, quantity, nominal_per_bond, interest_rate'),
@@ -207,14 +212,34 @@ const loadRoiData = async () => {
     if (etfsRes.error) throw etfsRes.error
     if (bondsRes.error) throw bondsRes.error
 
-    for (const row of (stocksRes.data ?? []) as PositionRow[]) {
-      stocksOpenPln.value += Number(row.opening_price) * Number(row.quantity)
-      stocksCurrentPln.value += Number(row.current_price) * Number(row.quantity)
+    const today = new Date().toISOString().slice(0, 10)
+    const stocksRows = (stocksRes.data ?? []) as PositionRow[]
+    const etfsRows = (etfsRes.data ?? []) as PositionRow[]
+
+    const fxRequests = [
+      ...stocksRows.map((row) => ({ currency: row.currency, date: row.closed_at || today })),
+      ...etfsRows.map((row) => ({ currency: row.currency, date: row.closed_at || today })),
+    ]
+
+    const { rates, missing } = await resolveFxRatesToPln(fxRequests)
+    if (missing.length > 0) {
+      fxWarning.value = `Missing FX rates for: ${missing.join(', ')}`
     }
 
-    for (const row of (etfsRes.data ?? []) as PositionRow[]) {
-      etfsOpenPln.value += Number(row.opening_price) * Number(row.quantity)
-      etfsCurrentPln.value += Number(row.current_price) * Number(row.quantity)
+    for (const row of stocksRows) {
+      const rateDate = row.closed_at || today
+      const rate = rates[fxRequestKey(row.currency, rateDate)]
+      if (!rate) continue
+      stocksOpenPln.value += Number(row.opening_price) * Number(row.quantity) * rate
+      stocksCurrentPln.value += Number(row.current_price) * Number(row.quantity) * rate
+    }
+
+    for (const row of etfsRows) {
+      const rateDate = row.closed_at || today
+      const rate = rates[fxRequestKey(row.currency, rateDate)]
+      if (!rate) continue
+      etfsOpenPln.value += Number(row.opening_price) * Number(row.quantity) * rate
+      etfsCurrentPln.value += Number(row.current_price) * Number(row.quantity) * rate
     }
 
     for (const row of (bondsRes.data ?? []) as BondRow[]) {

@@ -43,6 +43,7 @@ import FRoiPanel from '@/components/FRoiPanel.vue'
 import FStocksPanel from '@/components/FStocksPanel.vue'
 import FWalet from '@/components/FWalet.vue'
 import { calculateBondPosition, type BondPosition, type BondType } from '@/lib/bonds'
+import { fxRequestKey, resolveFxRatesToPln } from '@/lib/fx'
 import { supabase } from '@/lib/supabase'
 import { useSettingsStore } from '@/stores/settings'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -124,35 +125,59 @@ const loadWalletData = async () => {
     const today = new Date().toISOString().slice(0, 10)
     const { data: stocksData, error: stocksError } = await supabase
       .from('stocks_positions')
-      .select('current_price, quantity, closed_at')
+      .select('currency, current_price, quantity, closed_at')
       .order('opened_at', { ascending: false })
 
     if (stocksError) throw stocksError
 
+    const stockRows = (stocksData ?? []) as {
+      currency: string
+      current_price: number | string
+      quantity: number
+      closed_at: string | null
+    }[]
+    const openStockRows = stockRows.filter((row) => !(!!row.closed_at && row.closed_at < today))
+    const stockFx = await resolveFxRatesToPln(
+      openStockRows.map((row) => ({ currency: row.currency, date: today })),
+    )
+
     let stocksTotal = 0
-    for (const row of (
-      stocksData ?? []
-    ) as { current_price: number | string; quantity: number; closed_at: string | null }[]) {
-      const isClosed = !!row.closed_at && row.closed_at < today
-      if (isClosed) continue
-      stocksTotal += Number(row.current_price) * Number(row.quantity)
+    for (const row of openStockRows) {
+      const rate = stockFx.rates[fxRequestKey(row.currency, today)]
+      if (!rate) {
+        missing.add(row.currency.toUpperCase())
+        continue
+      }
+      stocksTotal += Number(row.current_price) * Number(row.quantity) * rate
     }
     stocksPln.value = Number(stocksTotal.toFixed(2))
 
     const { data: etfsData, error: etfsError } = await supabase
       .from('etfs_positions')
-      .select('current_price, quantity, closed_at')
+      .select('currency, current_price, quantity, closed_at')
       .order('opened_at', { ascending: false })
 
     if (etfsError) throw etfsError
 
+    const etfRows = (etfsData ?? []) as {
+      currency: string
+      current_price: number | string
+      quantity: number
+      closed_at: string | null
+    }[]
+    const openEtfRows = etfRows.filter((row) => !(!!row.closed_at && row.closed_at < today))
+    const etfFx = await resolveFxRatesToPln(
+      openEtfRows.map((row) => ({ currency: row.currency, date: today })),
+    )
+
     let etfsTotal = 0
-    for (const row of (
-      etfsData ?? []
-    ) as { current_price: number | string; quantity: number; closed_at: string | null }[]) {
-      const isClosed = !!row.closed_at && row.closed_at < today
-      if (isClosed) continue
-      etfsTotal += Number(row.current_price) * Number(row.quantity)
+    for (const row of openEtfRows) {
+      const rate = etfFx.rates[fxRequestKey(row.currency, today)]
+      if (!rate) {
+        missing.add(row.currency.toUpperCase())
+        continue
+      }
+      etfsTotal += Number(row.current_price) * Number(row.quantity) * rate
     }
     etfsPln.value = Number(etfsTotal.toFixed(2))
 
