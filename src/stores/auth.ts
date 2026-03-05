@@ -54,6 +54,24 @@ export const useAuthStore = defineStore('auth', () => {
     if (error) throw error
   }
 
+  const deleteAccount = async () => {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError) throw sessionError
+
+    const accessToken = sessionData.session?.access_token
+    if (!accessToken) throw new Error('Brak aktywnej sesji użytkownika.')
+
+    const { error } = await supabase.functions.invoke('delete-account', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+
+    if (error) throw error
+
+    await signOut()
+  }
+
   return {
     user,
     initialized,
@@ -62,5 +80,6 @@ export const useAuthStore = defineStore('auth', () => {
     signIn,
     signUp,
     signOut,
+    deleteAccount,
   }
 })

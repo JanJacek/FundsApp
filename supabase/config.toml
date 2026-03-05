@@ -383,3 +383,6 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 
 [functions.monthly-notifications]
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true

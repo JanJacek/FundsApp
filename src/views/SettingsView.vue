@@ -80,7 +80,7 @@
             </div>
           </div>
 
-          <div v-else class="space-y-4">
+          <div v-else-if="activeSection === 'portfolio'" class="space-y-4">
             <h2 class="m-0 text-lg font-bold text-text">Struktura portfela</h2>
             <p class="m-0 text-sm text-muted">
               Domyślnie: gotówka 4.6%, akcje 10%, ETF-y 67.4%, obligacje 18% (razem 100%).
@@ -160,6 +160,31 @@
               </FButton>
             </div>
           </div>
+
+          <div v-else-if="activeSection === 'account'" class="space-y-4">
+            <h2 class="m-0 text-lg font-bold text-text">Usuwanie konta</h2>
+            <p class="m-0 text-sm text-muted">
+              Ta operacja jest nieodwracalna. Konto oraz wszystkie Twoje dane w bazie zostaną usunięte.
+            </p>
+
+            <label class="grid gap-1 text-sm text-text">
+              Aby potwierdzić, wpisz <strong>USUN</strong>
+              <input
+                v-model="deleteConfirmText"
+                type="text"
+                maxlength="4"
+                class="w-28 rounded-[10px] border border-border bg-surface px-3 py-2 text-sm uppercase text-text outline-none"
+              />
+            </label>
+
+            <FButton
+              type="button"
+              :disabled="deletingAccount || deleteConfirmText !== 'USUN'"
+              @click="removeAccount"
+            >
+              {{ deletingAccount ? 'Usuwanie...' : 'Usuń konto' }}
+            </FButton>
+          </div>
         </section>
       </div>
     </section>
@@ -170,11 +195,15 @@
 import FButton from '@/components/FButton.vue'
 import FMessage from '@/components/FMessage.vue'
 import FSelect from '@/components/FSelect.vue'
+import { useAuthStore } from '@/stores/auth'
 import type { PortfolioAllocation } from '@/stores/settings'
 import { DEFAULT_PORTFOLIO_ALLOCATION } from '@/stores/settings'
 import { useSettingsStore } from '@/stores/settings'
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
+const auth = useAuthStore()
 const settings = useSettingsStore()
 const saving = ref(false)
 const saveError = ref('')
@@ -184,12 +213,17 @@ const avatarSaving = ref(false)
 const avatarForm = ref('')
 const notificationsSaving = ref(false)
 const notificationsForm = ref(true)
-const activeSection = ref<'presentation' | 'avatar' | 'notifications' | 'portfolio'>('presentation')
+const deletingAccount = ref(false)
+const deleteConfirmText = ref('')
+const activeSection = ref<'presentation' | 'avatar' | 'notifications' | 'portfolio' | 'account'>(
+  'presentation',
+)
 const sections = [
   { id: 'presentation', label: 'Waluta' },
   { id: 'avatar', label: 'Avatar' },
   { id: 'notifications', label: 'Powiadomienia' },
   { id: 'portfolio', label: 'Portfel' },
+  { id: 'account', label: 'Konto' },
 ] as const
 
 const currencyOptions = computed(() =>
@@ -271,6 +305,23 @@ const saveNotifications = async () => {
       error instanceof Error ? error.message : 'Nie udało się zapisać ustawienia powiadomień.'
   } finally {
     notificationsSaving.value = false
+  }
+}
+
+const removeAccount = async () => {
+  if (deleteConfirmText.value !== 'USUN') return
+
+  saveError.value = ''
+  saveSuccess.value = ''
+  deletingAccount.value = true
+
+  try {
+    await auth.deleteAccount()
+    await router.replace('/login')
+  } catch (error) {
+    saveError.value = error instanceof Error ? error.message : 'Nie udało się usunąć konta.'
+  } finally {
+    deletingAccount.value = false
   }
 }
 
