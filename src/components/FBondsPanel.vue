@@ -106,19 +106,21 @@
               {{ row.calc.status }}
             </span>
             <div v-else-if="header.key === 'actions'">
-              <button
-                type="button"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
-                :disabled="row.isSaving"
-                @click="deleteRow(row.localId)"
-                aria-label="Delete row"
-                title="Delete row"
-              >
-                <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
-                  <path :d="mdiDeleteOutline" />
-                </svg>
-              </button>
-              <p v-if="row.error" class="mt-1 text-xs text-error">{{ row.error }}</p>
+              <div class="flex justify-end">
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="row.isSaving"
+                  @click="deleteRow(row.localId)"
+                  aria-label="Delete row"
+                  title="Delete row"
+                >
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
+                    <path :d="mdiDeleteOutline" />
+                  </svg>
+                </button>
+              </div>
+              <p v-if="row.error" class="mt-1 text-right text-xs text-error">{{ row.error }}</p>
             </div>
           </template>
         </FTable>
@@ -168,13 +170,13 @@ const bondsTableHeaders: FTableHeader[] = [
   { key: 'bondType', label: 'Type' },
   { key: 'purchaseDate', label: 'Purchase Date' },
   { key: 'maturityDate', label: 'Maturity Date' },
-  { key: 'quantity', label: 'Quantity' },
-  { key: 'nominalPerBond', label: 'Nominal' },
-  { key: 'interestRate', label: 'Rate (decimal)' },
-  { key: 'purchaseValue', label: 'Purchase Value' },
-  { key: 'interest', label: 'Interest' },
-  { key: 'finalValue', label: 'Final Value' },
-  { key: 'roi', label: 'ROI' },
+  { key: 'quantity', label: 'Quantity', numeric: true, align: 'left' },
+  { key: 'nominalPerBond', label: 'Nominal', numeric: true, align: 'left' },
+  { key: 'interestRate', label: 'Rate (decimal)', numeric: true, align: 'left' },
+  { key: 'purchaseValue', label: 'Purchase Value', numeric: true },
+  { key: 'interest', label: 'Interest', numeric: true },
+  { key: 'finalValue', label: 'Final Value', numeric: true },
+  { key: 'roi', label: 'ROI', numeric: true },
   { key: 'status', label: 'Status' },
   { key: 'actions', label: 'Actions' },
 ]

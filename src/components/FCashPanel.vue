@@ -58,7 +58,7 @@
               {{ formatCurrency(valueInPln(row)) }}
             </span>
             <div v-else-if="header.key === 'actions'">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center justify-end gap-2">
                 <button
                   type="button"
                   class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
@@ -72,17 +72,19 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="row.error" class="mt-1 text-xs text-error">{{ row.error }}</p>
+              <p v-if="row.error" class="mt-1 text-right text-xs text-error">{{ row.error }}</p>
             </div>
           </template>
           <template #footer>
-              <tr class="border-t border-border bg-background/50">
-                <td class="px-3 py-2 font-semibold text-text" colspan="2">
-                  Cash na ostatni dzień miesiąca
-                </td>
-                <td class="px-3 py-2 font-bold text-text">{{ formatCurrency(totalPln) }}</td>
-                <td class="px-3 py-2" />
-              </tr>
+            <tr class="border-t border-border bg-background/50">
+              <td class="px-3 py-2 font-semibold text-text" colspan="2">
+                Cash na ostatni dzień miesiąca
+              </td>
+              <td class="px-3 py-2 text-right font-bold tabular-nums text-text">
+                {{ formatCurrency(totalPln) }}
+              </td>
+              <td class="px-3 py-2" />
+            </tr>
           </template>
         </FTable>
 
@@ -128,10 +130,10 @@ const now = new Date()
 const initialMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 const allowedCurrencies = ['PLN', 'EUR', 'USD'] as const
 const cashTableHeaders: FTableHeader[] = [
-  { key: 'currency', label: 'Currency' },
-  { key: 'amount', label: 'Amount' },
-  { key: 'valueInPln', label: 'Value in PLN' },
-  { key: 'actions', label: 'Actions' },
+  { key: 'currency', label: 'Currency', width: '100px' },
+  { key: 'amount', label: 'Amount', numeric: true, align: 'left', width: '100px' },
+  { key: 'valueInPln', label: 'Value', numeric: true, width: '100px' },
+  { key: 'actions', label: 'Actions', align: 'right' },
 ]
 
 const selectedPeriodMonth = ref(initialMonth)

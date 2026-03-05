@@ -44,39 +44,46 @@
           </article>
         </div>
 
-        <div class="mt-4 overflow-x-auto">
-          <table class="w-full border-collapse text-sm">
-            <thead>
-              <tr
-                v-for="(headersRow, rowIndex) in roiTableHeaderRows"
-                :key="`roi-head-row-${rowIndex}`"
-                class="border-b border-border text-left text-muted"
+        <div class="mt-4">
+          <FTable :headers="roiTableHeaders" :rows="rows" row-key="key">
+            <template #cell="{ row, header }">
+              <span v-if="header.key === 'label'" class="text-text">{{ row.label }}</span>
+              <span v-else-if="header.key === 'openDisplay'" class="text-text">
+                {{ formatCurrency(row.openDisplay) }}
+              </span>
+              <span v-else-if="header.key === 'currentDisplay'" class="text-text">
+                {{ formatCurrency(row.currentDisplay) }}
+              </span>
+              <span
+                v-else-if="header.key === 'roiGrossValueDisplay'"
+                class="font-semibold"
+                :class="roiClass(row.roiGrossValueDisplay)"
               >
-                <th v-for="header in headersRow" :key="header" class="px-3 py-2 font-semibold">
-                  {{ header }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in rows" :key="row.key" class="border-b border-border/70">
-                <td class="px-3 py-2 text-text">{{ row.label }}</td>
-                <td class="px-3 py-2 text-text">{{ formatCurrency(row.openDisplay) }}</td>
-                <td class="px-3 py-2 text-text">{{ formatCurrency(row.currentDisplay) }}</td>
-                <td class="px-3 py-2 font-semibold" :class="roiClass(row.roiGrossValueDisplay)">
-                  {{ formatSignedCurrency(row.roiGrossValueDisplay) }}
-                </td>
-                <td class="px-3 py-2 font-semibold" :class="roiClass(row.roiGrossValueDisplay)">
-                  {{ formatPercent(row.roiGrossPct) }}
-                </td>
-                <td class="px-3 py-2 font-semibold" :class="roiClass(row.roiNetValueDisplay)">
-                  {{ formatSignedCurrency(row.roiNetValueDisplay) }}
-                </td>
-                <td class="px-3 py-2 font-semibold" :class="roiClass(row.roiNetValueDisplay)">
-                  {{ formatPercent(row.roiNetPct) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                {{ formatSignedCurrency(row.roiGrossValueDisplay) }}
+              </span>
+              <span
+                v-else-if="header.key === 'roiGrossPct'"
+                class="font-semibold"
+                :class="roiClass(row.roiGrossValueDisplay)"
+              >
+                {{ formatPercent(row.roiGrossPct) }}
+              </span>
+              <span
+                v-else-if="header.key === 'roiNetValueDisplay'"
+                class="font-semibold"
+                :class="roiClass(row.roiNetValueDisplay)"
+              >
+                {{ formatSignedCurrency(row.roiNetValueDisplay) }}
+              </span>
+              <span
+                v-else-if="header.key === 'roiNetPct'"
+                class="font-semibold"
+                :class="roiClass(row.roiNetValueDisplay)"
+              >
+                {{ formatPercent(row.roiNetPct) }}
+              </span>
+            </template>
+          </FTable>
         </div>
       </template>
     </section>
@@ -84,6 +91,8 @@
 </template>
 
 <script setup lang="ts">
+import FTable from '@/components/FTable.vue'
+import type { FTableHeader } from '@/components/FTable.vue'
 import { calculateBondPosition, type BondPosition, type BondType } from '@/lib/bonds'
 import { useSettingsStore } from '@/stores/settings'
 import { supabase } from '@/lib/supabase'
@@ -116,8 +125,15 @@ const BELKA_TAX_RATE = 0.19
 const settings = useSettingsStore()
 const loading = ref(false)
 const errorMsg = ref('')
-const roiTableHeaders = ['Asset Class', 'Invested', 'Current', 'ROI Gross', 'ROI Gross %', 'ROI Net', 'ROI Net %']
-const roiTableHeaderRows = [roiTableHeaders]
+const roiTableHeaders: FTableHeader[] = [
+  { key: 'label', label: 'Asset Class' },
+  { key: 'openDisplay', label: 'Invested', numeric: true },
+  { key: 'currentDisplay', label: 'Current', numeric: true },
+  { key: 'roiGrossValueDisplay', label: 'ROI Gross', numeric: true },
+  { key: 'roiGrossPct', label: 'ROI Gross %', numeric: true },
+  { key: 'roiNetValueDisplay', label: 'ROI Net', numeric: true },
+  { key: 'roiNetPct', label: 'ROI Net %', numeric: true },
+]
 
 const stocksOpenPln = ref(0)
 const stocksCurrentPln = ref(0)

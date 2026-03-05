@@ -6,7 +6,8 @@
           <th
             v-for="header in headers"
             :key="header.key"
-            :class="header.thClass || defaultThClass"
+            :class="getThClass(header)"
+            :style="getColStyle(header)"
           >
             {{ header.label }}
           </th>
@@ -21,7 +22,8 @@
           <td
             v-for="(header, colIndex) in headers"
             :key="`${resolveRowKey(row, rowIndex)}-${header.key}`"
-            :class="header.tdClass || defaultTdClass"
+            :class="getTdClass(header)"
+            :style="getColStyle(header)"
           >
             <slot
               name="cell"
@@ -46,6 +48,9 @@
 export type FTableHeader = {
   key: string
   label: string
+  numeric?: boolean
+  align?: 'left' | 'right'
+  width?: string
   thClass?: string
   tdClass?: string
 }
@@ -82,6 +87,30 @@ const stringifyCellValue = (row: any, key: string) => {
   const value = row[key]
   if (value === null || value === undefined) return ''
   return String(value)
+}
+
+const getThClass = (header: FTableHeader) => [
+  getAlignClass(header),
+  header.thClass || props.defaultThClass,
+]
+
+const getTdClass = (header: FTableHeader) => [
+  getAlignClass(header),
+  header.numeric ? 'tabular-nums' : '',
+  header.tdClass || props.defaultTdClass,
+]
+
+const getAlignClass = (header: FTableHeader) => {
+  if (header.align === 'right') return 'text-right'
+  if (header.align === 'left') return 'text-left'
+  if (header.key === 'actions') return 'text-right'
+  if (header.numeric) return 'text-right'
+  return ''
+}
+
+const getColStyle = (header: FTableHeader) => {
+  if (!header.width) return undefined
+  return { width: header.width }
 }
 </script>
 

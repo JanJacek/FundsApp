@@ -82,19 +82,21 @@
               @blur="void onCommit(row.localId)"
             />
             <div v-else-if="header.key === 'actions'">
-              <button
-                type="button"
-                class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
-                :disabled="row.isSaving"
-                @click="deleteRow(row.localId)"
-                aria-label="Delete row"
-                title="Delete row"
-              >
-                <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
-                  <path :d="mdiDeleteOutline" />
-                </svg>
-              </button>
-              <p v-if="row.error" class="mt-1 text-xs text-error">{{ row.error }}</p>
+              <div class="flex justify-end">
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-error hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="row.isSaving"
+                  @click="deleteRow(row.localId)"
+                  aria-label="Delete row"
+                  title="Delete row"
+                >
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
+                    <path :d="mdiDeleteOutline" />
+                  </svg>
+                </button>
+              </div>
+              <p v-if="row.error" class="mt-1 text-right text-xs text-error">{{ row.error }}</p>
             </div>
           </template>
         </FTable>
@@ -138,9 +140,9 @@ const errorMsg = ref('')
 const editableRows = ref<EditableStockRow[]>([])
 const stocksTableHeaders: FTableHeader[] = [
   { key: 'name', label: 'Name' },
-  { key: 'currentPrice', label: 'Current Price' },
-  { key: 'openPrice', label: 'Open Price' },
-  { key: 'profitLoss', label: 'Profit/Loss' },
+  { key: 'currentPrice', label: 'Current Price', numeric: true, align: 'left' },
+  { key: 'openPrice', label: 'Open Price', numeric: true, align: 'left' },
+  { key: 'profitLoss', label: 'Profit/Loss', numeric: true },
   { key: 'openedAt', label: 'Open Date' },
   { key: 'closedAt', label: 'Close Date' },
   { key: 'actions', label: 'Actions' },
