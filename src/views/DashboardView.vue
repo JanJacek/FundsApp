@@ -26,6 +26,7 @@
       <FStocksPanel v-else-if="activeTab === 'stocks'" />
       <FEtfsPanel v-else-if="activeTab === 'etfs'" />
       <FBondsPanel v-else-if="activeTab === 'bonds'" />
+      <FDividendPanel v-else-if="activeTab === 'dividends'" />
       <FProgressPanel v-else-if="activeTab === 'progress'" />
       <FRoiPanel v-else-if="activeTab === 'roi'" />
     </div>
@@ -37,6 +38,7 @@ import FDashboardNav from '@/components/FDashboardNav.vue'
 import type { DashboardTab } from '@/components/FDashboardNav.vue'
 import FBondsPanel from '@/components/FBondsPanel.vue'
 import FCashPanel from '@/components/FCashPanel.vue'
+import FDividendPanel from '@/components/FDividendPanel.vue'
 import FEtfsPanel from '@/components/FEtfsPanel.vue'
 import FProgressPanel from '@/components/FProgressPanel.vue'
 import FRoiPanel from '@/components/FRoiPanel.vue'
@@ -255,6 +257,10 @@ watch(
       activeTab.value = 'bonds'
       return
     }
+    if (tab === 'dividends') {
+      activeTab.value = 'dividends'
+      return
+    }
     if (tab === 'progress') {
       activeTab.value = 'progress'
       return
@@ -284,6 +290,8 @@ watch(activeTab, async (tab) => {
     query.tab = 'etfs'
   } else if (tab === 'bonds') {
     query.tab = 'bonds'
+  } else if (tab === 'dividends') {
+    query.tab = 'dividends'
   } else if (tab === 'progress') {
     query.tab = 'progress'
   } else if (tab === 'roi') {

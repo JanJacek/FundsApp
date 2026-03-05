@@ -118,6 +118,12 @@ type BondRow = {
   interest_rate: number | string
 }
 
+type DividendRow = {
+  currency: string
+  value: number | string
+  paid_at: string
+}
+
 const FX_TO_PLN: Record<string, number> = {
   PLN: 1,
   EUR: 4.3,
@@ -146,6 +152,7 @@ const etfsOpenPln = ref(0)
 const etfsCurrentPln = ref(0)
 const bondsOpenPln = ref(0)
 const bondsCurrentPln = ref(0)
+const dividendsCurrentPln = ref(0)
 
 const convertFromPln = (valuePln: number) => {
   const rate = FX_TO_PLN[settings.displayCurrency]
@@ -153,8 +160,14 @@ const convertFromPln = (valuePln: number) => {
   return Number((valuePln / rate).toFixed(2))
 }
 
-const totalOpenDisplay = computed(() => convertFromPln(stocksOpenPln.value + etfsOpenPln.value + bondsOpenPln.value))
-const totalCurrentDisplay = computed(() => convertFromPln(stocksCurrentPln.value + etfsCurrentPln.value + bondsCurrentPln.value))
+const totalOpenDisplay = computed(() =>
+  convertFromPln(stocksOpenPln.value + etfsOpenPln.value + bondsOpenPln.value),
+)
+const totalCurrentDisplay = computed(() =>
+  convertFromPln(
+    stocksCurrentPln.value + etfsCurrentPln.value + bondsCurrentPln.value + dividendsCurrentPln.value,
+  ),
+)
 const totalRoiGrossValueDisplay = computed(() => Number((totalCurrentDisplay.value - totalOpenDisplay.value).toFixed(2)))
 const totalBelkaTaxDisplay = computed(() => Number((Math.max(totalRoiGrossValueDisplay.value, 0) * BELKA_TAX_RATE).toFixed(2)))
 const totalRoiNetValueDisplay = computed(() => Number((totalRoiGrossValueDisplay.value - totalBelkaTaxDisplay.value).toFixed(2)))
@@ -181,6 +194,7 @@ const rows = computed(() => {
     mapRow('stocks', 'Stocks', stocksOpenPln.value, stocksCurrentPln.value),
     mapRow('etfs', 'ETFs', etfsOpenPln.value, etfsCurrentPln.value),
     mapRow('bonds', 'Bonds', bondsOpenPln.value, bondsCurrentPln.value),
+    mapRow('dividends', 'Dividends', 0, dividendsCurrentPln.value),
   ]
 })
 
@@ -194,9 +208,10 @@ const loadRoiData = async () => {
   etfsCurrentPln.value = 0
   bondsOpenPln.value = 0
   bondsCurrentPln.value = 0
+  dividendsCurrentPln.value = 0
 
   try {
-    const [stocksRes, etfsRes, bondsRes] = await Promise.all([
+    const [stocksRes, etfsRes, bondsRes, dividendsRes] = await Promise.all([
       supabase
         .from('stocks_positions')
         .select('currency, quantity, opening_price, current_price, closed_at'),
@@ -206,19 +221,25 @@ const loadRoiData = async () => {
       supabase
         .from('bonds_positions')
         .select('id, bond_type, purchase_date, maturity_date, quantity, nominal_per_bond, interest_rate'),
+      supabase
+        .from('dividends_entries')
+        .select('currency, value, paid_at'),
     ])
 
     if (stocksRes.error) throw stocksRes.error
     if (etfsRes.error) throw etfsRes.error
     if (bondsRes.error) throw bondsRes.error
+    if (dividendsRes.error) throw dividendsRes.error
 
     const today = new Date().toISOString().slice(0, 10)
     const stocksRows = (stocksRes.data ?? []) as PositionRow[]
     const etfsRows = (etfsRes.data ?? []) as PositionRow[]
+    const dividendsRows = (dividendsRes.data ?? []) as DividendRow[]
 
     const fxRequests = [
       ...stocksRows.map((row) => ({ currency: row.currency, date: row.closed_at || today })),
       ...etfsRows.map((row) => ({ currency: row.currency, date: row.closed_at || today })),
+      ...dividendsRows.map((row) => ({ currency: row.currency, date: row.paid_at })),
     ]
 
     const { rates, missing } = await resolveFxRatesToPln(fxRequests)
@@ -240,6 +261,12 @@ const loadRoiData = async () => {
       if (!rate) continue
       etfsOpenPln.value += Number(row.opening_price) * Number(row.quantity) * rate
       etfsCurrentPln.value += Number(row.current_price) * Number(row.quantity) * rate
+    }
+
+    for (const row of dividendsRows) {
+      const rate = rates[fxRequestKey(row.currency, row.paid_at)]
+      if (!rate) continue
+      dividendsCurrentPln.value += Number(row.value) * rate
     }
 
     for (const row of (bondsRes.data ?? []) as BondRow[]) {
@@ -264,6 +291,7 @@ const loadRoiData = async () => {
     etfsCurrentPln.value = Number(etfsCurrentPln.value.toFixed(2))
     bondsOpenPln.value = Number(bondsOpenPln.value.toFixed(2))
     bondsCurrentPln.value = Number(bondsCurrentPln.value.toFixed(2))
+    dividendsCurrentPln.value = Number(dividendsCurrentPln.value.toFixed(2))
   } catch (error) {
     errorMsg.value = error instanceof Error ? error.message : 'Failed to load ROI.'
   } finally {
